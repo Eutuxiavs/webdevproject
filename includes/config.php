@@ -39,5 +39,9 @@ try {
 }
 
 // ---- Upload directory ----
-define('UPLOAD_DIR', __DIR__ . '/uploads/');
+// UPLOAD_DIR is a server filesystem path (used by move_uploaded_file / unlink).
+// This file now lives in includes/, so go one level up to the project root.
+define('UPLOAD_DIR', dirname(__DIR__) . '/uploads/');
+// UPLOAD_URL is a browser-facing relative path, used from root-level pages
+// like index.php and dashboard.php — so it stays relative to the project root.
 define('UPLOAD_URL', 'uploads/');

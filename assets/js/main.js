@@ -138,3 +138,118 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
 });
+
+/* ============================================================
+   FLOATING CHAT WIDGET
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', function () {
+  var widget = document.getElementById('chatWidget');
+  if (!widget) return;
+
+  var toggle      = document.getElementById('cwToggle');
+  var listView     = document.getElementById('cwListView');
+  var threadView   = document.getElementById('cwThreadView');
+  var backBtn      = document.getElementById('cwBack');
+  var messagesBox  = document.getElementById('cwMessages');
+  var form         = document.getElementById('cwForm');
+  var convIdInput  = document.getElementById('cwConvId');
+  var threadName   = document.getElementById('cwThreadName');
+  var threadItem   = document.getElementById('cwThreadItem');
+  var selfId       = widget.getAttribute('data-self');
+  var lastId       = 0;
+  var pollTimer    = null;
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function appendBubble(msg) {
+    var row = document.createElement('div');
+    row.className = 'chat-bubble-row' + (String(msg.sender_id) === String(selfId) ? ' mine' : '');
+    var bubble = document.createElement('div');
+    bubble.className = 'chat-bubble';
+    bubble.innerHTML = escapeHtml(msg.body).replace(/\n/g, '<br>');
+    row.appendChild(bubble);
+    messagesBox.appendChild(row);
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+    if (msg.id > lastId) lastId = msg.id;
+  }
+
+  function openThread(convId, name, item) {
+    convIdInput.value = convId;
+    threadName.textContent = name;
+    threadItem.textContent = 'Re: ' + item;
+    messagesBox.innerHTML = '';
+    lastId = 0;
+    listView.style.display = 'none';
+    threadView.style.display = 'flex';
+
+    fetch('api-fetch-messages.php?conversation_id=' + encodeURIComponent(convId) + '&after_id=0')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.ok) data.messages.forEach(appendBubble);
+      });
+
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(function () {
+      fetch('api-fetch-messages.php?conversation_id=' + encodeURIComponent(convId) + '&after_id=' + lastId)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok && data.messages.length) data.messages.forEach(appendBubble);
+        })
+        .catch(function () {});
+    }, 3000);
+  }
+
+  toggle.addEventListener('click', function () {
+    widget.classList.toggle('open');
+  });
+
+  widget.querySelectorAll('.cw-convo').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openThread(this.getAttribute('data-conversation'), this.getAttribute('data-name'), this.getAttribute('data-item'));
+    });
+  });
+
+  if (backBtn) {
+    backBtn.addEventListener('click', function () {
+      threadView.style.display = 'none';
+      listView.style.display = 'flex';
+      if (pollTimer) clearInterval(pollTimer);
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var input = document.getElementById('cwInput');
+      var body = input.value.trim();
+      if (!body) return;
+
+      var formData = new FormData(form);
+      fetch('api-send-message.php', { method: 'POST', body: formData })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            appendBubble(data.message);
+            input.value = '';
+          } else {
+            alert(data.error || 'Could not send message.');
+          }
+        });
+    });
+  }
+
+  // If the page requested a specific conversation open on load
+  // (e.g. after clicking "Message Seller"), open it automatically.
+  var autoOpen = widget.getAttribute('data-open-conversation');
+  if (autoOpen) {
+    var convo = widget.querySelector('.cw-convo[data-conversation="' + autoOpen + '"]');
+    if (convo) {
+      widget.classList.add('open');
+      convo.click();
+    }
+  }
+});

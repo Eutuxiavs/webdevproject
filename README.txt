@@ -8,22 +8,25 @@ yonzon-app/
 ├── register.php           Create account
 ├── login.php               Log in
 ├── logout.php              Log out
-├── dashboard.php           Post-login hub (your registry, actions, messages)
+├── dashboard.php           Post-login hub — your registry as a photo inventory grid
+├── browse.php               The shop: browse everyone's listings, filter by status/category
+├── profile.php              Your profile — avatar, bio, business (all optional)
 ├── claim-add.php           Register a new item
 ├── claim-sell.php          List an owned item for sale (requires a real photo)
 ├── claim-status.php        POST-only: report lost, mark found, cancel listing, delete
-├── start-conversation.php  Begins a chat about a listing
-├── messages.php             Chat UI (conversation list + thread)
+├── start-conversation.php  Begins a chat about a listing (for-sale OR lost items)
+├── messages.php             Full-page chat UI (conversation list + thread)
 ├── api-send-message.php    AJAX: send a chat message
 ├── api-fetch-messages.php  AJAX: poll for new chat messages
 ├── database.sql             Paste into phpMyAdmin to create everything
 ├── includes/
 │   ├── config.php           DB connection + session setup
-│   └── functions.php        Shared helpers (auth, CSRF, uploads, formatting)
+│   ├── functions.php        Shared helpers (auth, CSRF, uploads, formatting, brand_mark())
+│   └── chat-widget.php      The floating chat bubble, included on every logged-in page
 ├── assets/
 │   ├── css/style.css
 │   └── js/main.js
-└── uploads/                 Where item photos are stored (+ .htaccess lockdown)
+└── uploads/                 Where item photos + profile pictures are stored
 
 Every page file stays at the ROOT level (index.php, dashboard.php, etc.) —
 only the shared backend code moved into includes/, and only CSS/JS moved
@@ -41,7 +44,7 @@ SETUP (XAMPP)
 2. Start Apache AND MySQL in the XAMPP control panel (both — MySQL is new).
 3. Open http://localhost/phpmyadmin
 4. Click the "SQL" tab, paste the entire contents of database.sql, and run it.
-   This creates the "yonzon_claim" database and all four tables.
+   This creates the "webdevproject" database and all four tables.
 5. Visit http://localhost/yonzon-app/
 6. Click "Register an item" → create an account → you're in.
 
@@ -50,8 +53,82 @@ no password). If you set a MySQL password yourself, update DB_PASS in
 includes/config.php to match.
 
 
-WHAT'S ACTUALLY FUNCTIONAL NOW
+DATABASE NAME
 ----------------------------------------------------
+The database is named "webdevproject" (not "yonzon_claim"). If you'd
+already imported the old schema under a different name, drop it first —
+database.sql has the exact DROP DATABASE commands at the top as a comment.
+
+
+WHAT'S NEW IN THIS PASS
+----------------------------------------------------
+- Dashboard ("Your registry") is now a photo-forward inventory grid —
+  each item shows its real uploaded photo, category, claim ID, status,
+  and price, laid out like a proper catalog instead of plain text rows.
+
+- browse.php is the actual shop: every listed item across every user,
+  with filter pills (All / For Sale / Lost & Found) and a category
+  dropdown. This is separate from the homepage's static "Live examples"
+  section — browse.php is the real, filterable, logged-in experience.
+
+- Messaging now has two forms: the original full-page messages.php, and
+  a floating circular chat bubble (bottom-right corner) that's on every
+  logged-in page — dashboard, browse, profile, add/sell forms. Click it
+  to see your conversations and chat inline without leaving the page.
+  Both use the same api-send-message.php / api-fetch-messages.php
+  endpoints under the hood, so messages sent from one show up in both.
+
+- profile.php: profile picture, bio, and an optional "business / related
+  to" field, shown at the top of the profile page along with a quick
+  item-count summary. All three fields are optional — name is the only
+  required one, since it's already set at registration.
+
+- "I Found This" — browse.php now also lets you start a conversation on
+  someone else's LOST item, not just items for sale, since that's the
+  actual point of the lost & found feature (a finder reaching the owner).
+
+
+HOW TO SWAP THE LOGO
+----------------------------------------------------
+The diamond monogram is defined in exactly ONE place: the brand_mark()
+function near the top of includes/functions.php. Every page (homepage,
+dashboard, browse, profile, auth pages, footer) calls that one function
+instead of repeating the logo markup, so changing it there changes it
+everywhere at once.
+
+To use your own logo image:
+
+1. Create the folder assets/img/ and put your logo file in it, e.g.
+   assets/img/logo.png (png, jpg, or svg all work).
+
+2. Open includes/functions.php, find the brand_mark() function, and
+   replace the <svg>...</svg> block inside it with:
+
+       echo '<img src="' . asset_path('img/logo.png') . '" alt="YONZON"
+             style="width:' . $size . 'px; height:' . $size . 'px; object-fit:contain;">';
+
+3. Save. That's it — every instance of the logo across the whole site
+   updates immediately, and each one stays a FIXED size (34px in nav
+   bars, 26px in the footer, 24px on login/register) no matter what
+   pixel dimensions your actual image file is, because object-fit:contain
+   scales it to fit that box without stretching or distorting it.
+
+If your logo image isn't square, that's fine — object-fit:contain keeps
+its proportions and just centers it inside the fixed-size box instead of
+cropping or squishing it.
+
+
+UPLOADS FOLDER SECURITY NOTE
+----------------------------------------------------
+The uploads/.htaccess lockdown (blocking PHP execution and folder
+browsing) was removed earlier at your request since this is a school
+project. Uploaded files are still validated by real file content (not
+just the extension) and given random filenames, but the extra Apache-
+level lockdown is gone. If this ever became a real public site, that
+.htaccess should go back in.
+
+
+
 - Real accounts: passwords hashed with password_hash(), never stored plain.
 - Add / edit / delete claims, all scoped to the logged-in user.
 - "List for sale" requires an actual uploaded photo (JPG/PNG/WEBP, max 5MB) —

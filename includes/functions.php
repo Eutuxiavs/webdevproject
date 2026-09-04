@@ -53,7 +53,47 @@ function verify_csrf(): void {
     }
 }
 
-/* ---------------- Claims / items ---------------- */
+/* ---------------- Brand mark (logo) ---------------- */
+/**
+ * Renders the site logo. This is the ONLY place the logo markup lives —
+ * every page calls brand_mark() instead of pasting the SVG inline, so
+ * swapping the logo means editing ONE function, not every page.
+ *
+ * TO USE YOUR OWN LOGO IMAGE:
+ * 1. Save your logo file as assets/img/logo.png (any image works —
+ *    png, jpg, or svg — just keep the filename "logo" or update the
+ *    path below to match).
+ * 2. Replace the <svg>...</svg> block below with:
+ *      echo '<img src="' . asset_path('img/logo.png') . '" alt="YONZON"
+ *            style="width:' . $size . 'px; height:' . $size . 'px; object-fit:contain;">';
+ * That's it — every nav bar, footer, and auth page updates at once,
+ * and object-fit:contain keeps it a fixed size no matter what
+ * dimensions your source image actually is.
+ */
+function brand_mark(int $size = 34): void {
+    echo '<svg viewBox="0 0 40 40" fill="none" style="width:' . $size . 'px; height:' . $size . 'px;">'
+       . '<path d="M20 3L36 20L20 37L4 20L20 3Z" stroke="currentColor" stroke-width="1"/>'
+       . '<path d="M12 12L28 28M28 12L12 28" stroke="currentColor" stroke-width="1"/>'
+       . '<path d="M20 3V37" stroke="currentColor" stroke-width="1"/>'
+       . '</svg>';
+}
+
+/**
+ * Builds a path to a file in assets/, relative to whichever page calls it.
+ * Every page in this project lives at the project root, so this is just
+ * "assets/..." — kept as a function so it's a single place to change if
+ * that ever stops being true.
+ */
+function asset_path(string $relative): string {
+    return 'assets/' . ltrim($relative, '/');
+}
+
+/* ---------------- Categories (shared by add-item + browse filters) ---------------- */
+function yz_categories(): array {
+    return ['Photography', 'Timepieces', 'Electronics', 'Cycling', 'Instruments', 'Footwear', 'Other'];
+}
+
+
 function category_icon_key(string $category): string {
     $map = [
         'Photography' => 'camera',

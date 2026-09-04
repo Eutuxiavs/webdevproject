@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/functions.php';
 require_login();
 
 $user = current_user();
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <title>List for sale — YONZON CLAIM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,480;0,9..144,600;1,9..144,460&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body class="dash-body">
 
@@ -64,13 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="dash-wrap">
     <div class="lh-main" style="padding:18px 0;">
       <a class="mark" href="dashboard.php">
-        <svg viewBox="0 0 40 40" fill="none"><path d="M20 3L36 20L20 37L4 20L20 3Z" stroke="currentColor" stroke-width="1"/><path d="M12 12L28 28M28 12L12 28" stroke="currentColor" stroke-width="1"/><path d="M20 3V37" stroke="currentColor" stroke-width="1"/></svg>
+        <?php brand_mark(34); ?>
         <div class="mark-word"><div class="a">YONZON</div><div class="b">Claim Registry</div></div>
       </a>
       <nav class="dash-nav">
         <a href="dashboard.php">Dashboard</a>
-        <a href="messages.php">Messages</a>
-        <a href="index.php#market">Marketplace</a>
+        <a href="browse.php">Marketplace</a>
+        <a href="profile.php">Profile</a>
       </nav>
       <div class="dash-user">
         <span><?= e($user['name']) ?></span>
@@ -120,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </form>
 </main>
 
-<script src="main.js"></script>
+<?php require __DIR__ . '/includes/chat-widget.php'; ?>
+<script src="assets/js/main.js"></script>
 </body>
 </html>

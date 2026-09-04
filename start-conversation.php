@@ -1,18 +1,18 @@
 <?php
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/functions.php';
 require_login();
 
 $user = current_user();
 $itemId = (int)($_GET['item'] ?? 0);
 
-$stmt = $pdo->prepare('SELECT * FROM items WHERE id = ? AND status = "for_sale"');
+$stmt = $pdo->prepare('SELECT * FROM items WHERE id = ? AND status IN ("for_sale", "lost")');
 $stmt->execute([$itemId]);
 $item = $stmt->fetch();
 
 if (!$item) {
     flash_set('error', 'That listing is no longer available.');
-    header('Location: index.php#market');
+    header('Location: browse.php');
     exit;
 }
 

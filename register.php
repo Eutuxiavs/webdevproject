@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/functions.php';
 
 if (current_user_id()) { header('Location: dashboard.php'); exit; }
 
@@ -48,13 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <title>Create an account — YONZON CLAIM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,480;0,9..144,600;1,9..144,460&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body class="auth-body">
 
 <div class="auth-shell">
   <a class="auth-mark" href="index.php">
-    <svg viewBox="0 0 40 40" fill="none"><path d="M20 3L36 20L20 37L4 20L20 3Z" stroke="currentColor" stroke-width="1"/><path d="M12 12L28 28M28 12L12 28" stroke="currentColor" stroke-width="1"/><path d="M20 3V37" stroke="currentColor" stroke-width="1"/></svg>
+    <?php brand_mark(24); ?>
     <span>YONZON CLAIM</span>
   </a>
 

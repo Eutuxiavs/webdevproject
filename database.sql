@@ -2,12 +2,18 @@
 -- YONZON CLAIM — Database Schema
 -- Paste this whole file into phpMyAdmin (SQL tab) and run it,
 -- or: mysql -u root -p < database.sql
+--
+-- If you already created "yonzon_claim" or an older "webdevproject"
+-- database before, drop it first so this creates a clean one:
+--   DROP DATABASE IF EXISTS yonzon_claim;
+--   DROP DATABASE IF EXISTS webdevproject;
+-- then run this whole file again.
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS yonzon_claim
+CREATE DATABASE IF NOT EXISTS webdevproject
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-USE yonzon_claim;
+USE webdevproject;
 
 -- ---------- Users ----------
 CREATE TABLE IF NOT EXISTS users (
@@ -15,6 +21,9 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(100) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
+  avatar_path VARCHAR(255) DEFAULT NULL,
+  bio TEXT DEFAULT NULL,
+  business VARCHAR(150) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
