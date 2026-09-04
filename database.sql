@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS messages (
   conversation_id INT NOT NULL,
   sender_id INT NOT NULL,
   body TEXT NOT NULL,
+  read_at TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
   FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE

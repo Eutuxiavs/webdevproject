@@ -71,11 +71,7 @@ function verify_csrf(): void {
  * dimensions your source image actually is.
  */
 function brand_mark(int $size = 34): void {
-    echo '<svg viewBox="0 0 40 40" fill="none" style="width:' . $size . 'px; height:' . $size . 'px;">'
-       . '<path d="M20 3L36 20L20 37L4 20L20 3Z" stroke="currentColor" stroke-width="1"/>'
-       . '<path d="M12 12L28 28M28 12L12 28" stroke="currentColor" stroke-width="1"/>'
-       . '<path d="M20 3V37" stroke="currentColor" stroke-width="1"/>'
-       . '</svg>';
+    echo '<img src="' . asset_path('img/logo.png') . '" alt="YONZON" style="width:' . $size . 'px; height:' . $size . 'px; object-fit:contain;">';
 }
 
 /**

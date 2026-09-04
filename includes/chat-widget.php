@@ -11,20 +11,24 @@ $stmt = $pdo->prepare(
     'SELECT c.id, i.name AS item_name,
             CASE WHEN c.buyer_id = ? THEN c.seller_id ELSE c.buyer_id END AS other_id,
             u.name AS other_name,
-            (SELECT body FROM messages m WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_body
+            (SELECT body FROM messages m WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) AS last_body,
+            (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.sender_id != ? AND m.read_at IS NULL) AS unread_count
      FROM conversations c
      JOIN items i ON i.id = c.item_id
      JOIN users u ON u.id = (CASE WHEN c.buyer_id = ? THEN c.seller_id ELSE c.buyer_id END)
      WHERE c.buyer_id = ? OR c.seller_id = ?
      ORDER BY c.id DESC'
 );
-$stmt->execute([$widgetUser['id'], $widgetUser['id'], $widgetUser['id'], $widgetUser['id']]);
+$stmt->execute([$widgetUser['id'], $widgetUser['id'], $widgetUser['id'], $widgetUser['id'], $widgetUser['id']]);
 $widgetConversations = $stmt->fetchAll();
+
+$totalUnread = array_sum(array_column($widgetConversations, 'unread_count'));
+$unreadLabel = $totalUnread > 99 ? '99+' : (string)$totalUnread;
 ?>
 <div class="cw" id="chatWidget" data-self="<?= (int)$widgetUser['id'] ?>">
   <button class="cw-toggle" id="cwToggle" type="button" aria-label="Messages">
-    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-    <?php if ($widgetConversations): ?><span class="cw-badge"><?= count($widgetConversations) ?></span><?php endif; ?>
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+    <?php if ($totalUnread > 0): ?><span class="cw-badge"><?= e($unreadLabel) ?></span><?php endif; ?>
   </button>
 
   <div class="cw-panel" id="cwPanel">
@@ -42,7 +46,7 @@ $widgetConversations = $stmt->fetchAll();
                     data-conversation="<?= (int)$c['id'] ?>"
                     data-name="<?= e($c['other_name']) ?>"
                     data-item="<?= e($c['item_name']) ?>">
-              <span class="cw-convo-name"><?= e($c['other_name']) ?></span>
+              <span class="cw-convo-name"><?= e($c['other_name']) ?><?php if ($c['unread_count'] > 0): ?><span class="cw-convo-unread"><?= (int)$c['unread_count'] ?></span><?php endif; ?></span>
               <span class="cw-convo-item"><?= e($c['item_name']) ?></span>
               <span class="cw-convo-snip"><?= e(mb_strimwidth($c['last_body'] ?? 'No messages yet.', 0, 40, '…')) ?></span>
             </button>

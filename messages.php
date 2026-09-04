@@ -35,6 +35,12 @@ if ($activeId) {
         );
         $stmt->execute([$activeId]);
         $messages = $stmt->fetchAll();
+
+        // Mark any messages sent TO this user in this conversation as read.
+        $pdo->prepare(
+            'UPDATE messages SET read_at = NOW()
+             WHERE conversation_id = ? AND sender_id != ? AND read_at IS NULL'
+        )->execute([$activeId, $user['id']]);
     }
 }
 ?>
