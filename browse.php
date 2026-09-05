@@ -13,29 +13,50 @@ if (!in_array($statusFilter, $validStatuses, true)) $statusFilter = 'all';
 $categoryFilter = $_GET['category'] ?? '';
 if (!in_array($categoryFilter, $categories, true)) $categoryFilter = '';
 
-$sql = 'SELECT i.*, u.name AS owner_name FROM items i JOIN users u ON u.id = i.user_id WHERE 1=1';
+$search = trim($_GET['q'] ?? '');
+
+$perPage = 9;
+$page = max(1, (int)($_GET['page'] ?? 1));
+
+$where = ' WHERE 1=1';
 $params = [];
 
 if ($statusFilter === 'all') {
-    $sql .= ' AND i.status IN ("for_sale", "lost")'; // only publicly-relevant statuses
+    $where .= ' AND i.status IN ("for_sale", "lost")'; // only publicly-relevant statuses
 } else {
-    $sql .= ' AND i.status = ?';
+    $where .= ' AND i.status = ?';
     $params[] = $statusFilter;
 }
 if ($categoryFilter !== '') {
-    $sql .= ' AND i.category = ?';
+    $where .= ' AND i.category = ?';
     $params[] = $categoryFilter;
 }
-$sql .= ' ORDER BY i.updated_at DESC';
+if ($search !== '') {
+    $where .= ' AND (i.name LIKE ? OR i.claim_id LIKE ?)';
+    $params[] = '%' . $search . '%';
+    $params[] = '%' . $search . '%';
+}
+
+$countStmt = $pdo->prepare('SELECT COUNT(*) AS n FROM items i' . $where);
+$countStmt->execute($params);
+$totalCount = (int)$countStmt->fetch()['n'];
+$totalPages = max(1, (int)ceil($totalCount / $perPage));
+$page = min($page, $totalPages);
+$offset = ($page - 1) * $perPage;
+
+$sql = 'SELECT i.*, u.name AS owner_name FROM items i JOIN users u ON u.id = i.user_id'
+     . $where . ' ORDER BY i.updated_at DESC LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $listings = $stmt->fetchAll();
 
-function filter_url(string $status, string $category): string {
+function filter_url(string $status, string $category, string $search = '', int $page = 1): string {
     $q = [];
     if ($status !== 'all') $q['status'] = $status;
     if ($category !== '') $q['category'] = $category;
+    if ($search !== '') $q['q'] = $search;
+    if ($page > 1) $q['page'] = $page;
     return 'browse.php' . ($q ? '?' . http_build_query($q) : '');
 }
 ?>
@@ -47,7 +68,7 @@ function filter_url(string $status, string $category): string {
 <title>Marketplace — YONZON CLAIM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,480;0,9..144,600;1,9..144,460&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="<?= asset_url('css/style.css') ?>">
 </head>
 <body class="dash-body">
 
@@ -85,18 +106,20 @@ function filter_url(string $status, string $category): string {
     <a class="filter-pill <?= $statusFilter === 'for_sale' ? 'active' : '' ?>" href="<?= e(filter_url('for_sale', $categoryFilter)) ?>">For Sale</a>
     <a class="filter-pill <?= $statusFilter === 'lost' ? 'active' : '' ?>" href="<?= e(filter_url('lost', $categoryFilter)) ?>">Lost &amp; Found</a>
 
-    <form method="get" style="margin-left:auto;">
+    <form method="get" style="margin-left:auto; display:flex; gap:10px;">
       <input type="hidden" name="status" value="<?= e($statusFilter) ?>">
+      <input type="text" name="q" value="<?= e($search) ?>" placeholder="Search name or claim ID…" class="filter-select" style="min-width:200px;">
       <select name="category" class="filter-select" onchange="this.form.submit()">
         <option value="">All categories</option>
         <?php foreach ($categories as $cat): ?>
           <option value="<?= e($cat) ?>" <?= $categoryFilter === $cat ? 'selected' : '' ?>><?= e($cat) ?></option>
         <?php endforeach; ?>
       </select>
+      <button type="submit" class="btn btn-ghost">Search</button>
     </form>
   </div>
 
-  <div class="filter-count"><?= count($listings) ?> item<?= count($listings) === 1 ? '' : 's' ?> found</div>
+  <div class="filter-count"><?= $totalCount ?> item<?= $totalCount === 1 ? '' : 's' ?> found<?= $search !== '' ? ' for "' . e($search) . '"' : '' ?></div>
 
   <?php if (!$listings): ?>
     <div class="dash-empty">
@@ -142,10 +165,18 @@ function filter_url(string $status, string $category): string {
         </div>
       <?php endforeach; ?>
     </div>
+
+    <?php if ($totalPages > 1): ?>
+      <div class="pagination">
+        <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+          <a class="page-pill <?= $p === $page ? 'active' : '' ?>" href="<?= e(filter_url($statusFilter, $categoryFilter, $search, $p)) ?>"><?= $p ?></a>
+        <?php endfor; ?>
+      </div>
+    <?php endif; ?>
   <?php endif; ?>
 </main>
 
 <?php require __DIR__ . '/includes/chat-widget.php'; ?>
-<script src="assets/js/main.js"></script>
+<script src="<?= asset_url('js/main.js') ?>"></script>
 </body>
 </html>

@@ -253,3 +253,54 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 });
+
+/* ============================================================
+   CUSTOM CONFIRM MODAL
+   Replaces native confirm() dialogs on forms marked data-confirm="...".
+   ============================================================ */
+function yzConfirm(message, title) {
+  return new Promise(function (resolve) {
+    var overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML =
+      '<div class="modal-card">' +
+        (title ? '<div class="modal-title">' + title + '</div>' : '') +
+        '<div class="modal-msg"></div>' +
+        '<div class="modal-actions">' +
+          '<button type="button" class="modal-btn" data-choice="cancel">Cancel</button>' +
+          '<button type="button" class="modal-btn danger" data-choice="confirm">Confirm</button>' +
+        '</div>' +
+      '</div>';
+    overlay.querySelector('.modal-msg').textContent = message;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(function () { overlay.classList.add('open'); });
+
+    function close(result) {
+      overlay.classList.remove('open');
+      setTimeout(function () { overlay.remove(); }, 180);
+      resolve(result);
+    }
+
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) close(false);
+      var choice = e.target.getAttribute('data-choice');
+      if (choice === 'confirm') close(true);
+      if (choice === 'cancel') close(false);
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('form[data-confirm]').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      if (form.dataset.confirmed === '1') return; // already confirmed, let it through
+      e.preventDefault();
+      yzConfirm(form.dataset.confirm, form.dataset.confirmTitle || 'Please confirm').then(function (ok) {
+        if (ok) {
+          form.dataset.confirmed = '1';
+          form.submit();
+        }
+      });
+    });
+  });
+});

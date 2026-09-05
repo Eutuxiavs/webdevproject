@@ -38,6 +38,12 @@ switch ($action) {
         flash_set('success', "Good news — \"{$item['name']}\" is marked found.");
         break;
 
+    case 'sold':
+        $pdo->prepare('UPDATE items SET status = "sold" WHERE id = ? AND user_id = ?')
+            ->execute([$id, $user['id']]);
+        flash_set('success', "\"{$item['name']}\" is marked sold. Nice.");
+        break;
+
     case 'cancel_sale':
         $pdo->prepare('UPDATE items SET status = "owned", price = NULL WHERE id = ? AND user_id = ?')
             ->execute([$id, $user['id']]);

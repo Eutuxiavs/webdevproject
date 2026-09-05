@@ -27,7 +27,7 @@ $unreadLabel = $totalUnread > 99 ? '99+' : (string)$totalUnread;
 ?>
 <div class="cw" id="chatWidget" data-self="<?= (int)$widgetUser['id'] ?>">
   <button class="cw-toggle" id="cwToggle" type="button" aria-label="Messages">
-    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9 6 9-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H7l-3 3V4z"/><circle cx="9" cy="10" r="1" fill="#ffffff" stroke="none"/><circle cx="12" cy="10" r="1" fill="#ffffff" stroke="none"/><circle cx="15" cy="10" r="1" fill="#ffffff" stroke="none"/></svg>
     <?php if ($totalUnread > 0): ?><span class="cw-badge"><?= e($unreadLabel) ?></span><?php endif; ?>
   </button>
 

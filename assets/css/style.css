@@ -477,7 +477,7 @@ footer{padding:0;}
 .cw-toggle:hover{transform:translateY(-2px) scale(1.04);}
 .cw-toggle svg{width:24px; height:24px;}
 .cw-badge{
-  position:absolute; top:-4px; right:-4px; background:var(--paper); color:var(--ink);
+  position:absolute; top:-4px; right:-4px; background:#e5484d; color:#fff;
   font-size:10px; font-weight:700; min-width:18px; height:18px; border-radius:9px;
   display:flex; align-items:center; justify-content:center; padding:0 4px;
   border:2px solid var(--ink);
@@ -493,7 +493,7 @@ footer{padding:0;}
 .cw.open .cw-panel{opacity:1; transform:translateY(0) scale(1); pointer-events:auto;}
 .cw-convo-name{display:flex; align-items:center; gap:8px;}
 .cw-convo-unread{
-  background:var(--accent); color:#fff; font-size:10px; font-weight:700;
+  background:#e5484d; color:#fff; font-size:10px; font-weight:700;
   min-width:16px; height:16px; border-radius:8px; display:inline-flex;
   align-items:center; justify-content:center; padding:0 4px;
 }
@@ -556,11 +556,16 @@ footer{padding:0;}
 .inv-meta{display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px solid var(--line-soft); margin-bottom:10px;}
 .inv-id{font-size:10.5px; color:var(--paper-faint);}
 .inv-price{font-family:'Fraunces'; font-style:italic; font-size:15px; color:var(--accent-l);}
-.inv-actions{display:flex; flex-wrap:wrap; gap:10px 14px;}
-.inv-actions .inline-action{display:inline;}
-.inv-actions .inline-action button, .inv-actions a{font-size:11.5px; color:var(--accent-l); text-decoration:none; background:none; border:none; padding:0; cursor:pointer;}
-.inv-actions .inline-action button:hover, .inv-actions a:hover{text-decoration:underline;}
-.inv-actions .dash-danger{color:#e88686 !important;}
+.inv-actions{display:flex; flex-wrap:wrap; gap:8px;}
+.inv-actions .inline-action{display:inline-flex;}
+.inv-actions a, .inv-actions .inline-action button{
+  font-size:11px; padding:7px 13px; border:1px solid var(--line); border-radius:20px;
+  color:var(--paper-dim); text-decoration:none; background:transparent; cursor:pointer;
+  transition:all .2s ease; white-space:nowrap; line-height:1;
+}
+.inv-actions a:hover, .inv-actions .inline-action button:hover{border-color:var(--accent-l); color:var(--accent-l);}
+.inv-actions .dash-danger{color:#e88686 !important; border-color:rgba(232,100,100,0.35) !important;}
+.inv-actions .dash-danger:hover{background:#e5484d !important; border-color:#e5484d !important; color:#fff !important;}
 
 @media (max-width:1100px){ .inv-grid{grid-template-columns:repeat(2,1fr);} }
 @media (max-width:640px){ .inv-grid{grid-template-columns:1fr;} }
@@ -595,3 +600,43 @@ footer{padding:0;}
 .profile-name{font-family:'Fraunces'; font-style:italic; font-size:26px; margin-bottom:6px;}
 .profile-business{font-size:12.5px; color:var(--accent-l);}
 .upload-drop.round{width:96px; height:96px; border-radius:50%;}
+
+/* ============================================================
+   CONFIRM MODAL (replaces native browser confirm())
+   ============================================================ */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(4,4,5,0.7); backdrop-filter:blur(6px);
+  display:flex; align-items:center; justify-content:center; z-index:300;
+  opacity:0; pointer-events:none; transition:opacity .18s ease;
+}
+.modal-overlay.open{opacity:1; pointer-events:auto;}
+.modal-card{
+  background:var(--ink-2); border:1px solid var(--line); border-radius:8px;
+  padding:30px 32px; max-width:380px; width:90%;
+  box-shadow:0 50px 100px -20px rgba(0,0,0,0.8), 0 0 60px -24px var(--accent-glow-soft);
+  transform:translateY(10px) scale(0.98); transition:transform .18s ease;
+}
+.modal-overlay.open .modal-card{transform:translateY(0) scale(1);}
+.modal-title{font-family:'Fraunces'; font-style:italic; font-size:19px; margin-bottom:10px;}
+.modal-msg{font-size:13.5px; color:var(--paper-dim); line-height:1.6; margin-bottom:26px;}
+.modal-actions{display:flex; gap:12px; justify-content:flex-end;}
+.modal-btn{
+  padding:10px 20px; border-radius:4px; font-size:12px; font-weight:600;
+  letter-spacing:0.03em; cursor:pointer; border:1px solid var(--line);
+  background:transparent; color:var(--paper); transition:all .18s ease;
+}
+.modal-btn:hover{border-color:var(--paper-dim);}
+.modal-btn.danger{background:#e5484d; border-color:#e5484d; color:#fff;}
+.modal-btn.danger:hover{background:#f05a5f; border-color:#f05a5f;}
+
+/* ============================================================
+   PAGINATION (browse.php)
+   ============================================================ */
+.pagination{display:flex; gap:8px; margin-top:36px; justify-content:center;}
+.page-pill{
+  width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--line); border-radius:50%; color:var(--paper-dim);
+  text-decoration:none; font-size:12.5px; transition:all .2s ease;
+}
+.page-pill:hover{border-color:var(--accent-l); color:var(--paper);}
+.page-pill.active{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600;}

@@ -31,7 +31,7 @@ $registerHref = $user ? 'claim-add.php' : 'register.php';
 <title>YONZON CLAIM — Registry</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,480;0,9..144,600;1,9..144,460&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="<?= asset_url('css/style.css') ?>">
 </head>
 <body>
 
@@ -95,12 +95,7 @@ $registerHref = $user ? 'claim-add.php' : 'register.php';
         </div>
       </div>
       <div class="hero-mark">
-        <svg viewBox="0 0 200 200" fill="none">
-          <path d="M100 8L192 100L100 192L8 100L100 8Z" stroke="url(#silverGrad)" stroke-width="0.6" opacity="0.55"/>
-          <path d="M55 55L145 145M145 55L55 145" stroke="url(#silverGrad)" stroke-width="0.6" opacity="0.55"/>
-          <path d="M100 8V192" stroke="url(#silverGrad)" stroke-width="0.6" opacity="0.55"/>
-          <circle cx="100" cy="100" r="94" stroke="url(#silverGrad)" stroke-width="0.4" opacity="0.35"/>
-        </svg>
+        <img src="<?= e(asset_path('img/logo.png')) ?>" alt="" style="width:80%; max-width:420px; opacity:0.9;">
       </div>
     </div>
   </div>
@@ -395,6 +390,6 @@ $registerHref = $user ? 'claim-add.php' : 'register.php';
   </div>
 </footer>
 
-<script src="assets/js/main.js"></script>
+<script src="<?= asset_url('js/main.js') ?>"></script>
 </body>
 </html>

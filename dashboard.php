@@ -23,7 +23,7 @@ $error   = flash_get('error');
 <title>Dashboard — YONZON CLAIM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,480;0,9..144,600;1,9..144,460&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="<?= asset_url('css/style.css') ?>">
 </head>
 <body class="dash-body">
 
@@ -97,13 +97,19 @@ $error   = flash_get('error');
               <div class="inv-actions">
                 <?php if ($item['status'] === 'owned'): ?>
                   <a href="claim-sell.php?id=<?= (int)$item['id'] ?>">List for sale</a>
-                  <form class="inline-action" method="post" action="claim-status.php" onsubmit="return confirm('Mark this item as lost?');">
+                  <form class="inline-action" method="post" action="claim-status.php" data-confirm="Mark this item as lost? Its status will change publicly.">
                     <?= csrf_field() ?>
                     <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
                     <input type="hidden" name="action" value="lost">
                     <button type="submit">Report lost</button>
                   </form>
                 <?php elseif ($item['status'] === 'for_sale'): ?>
+                  <form class="inline-action" method="post" action="claim-status.php" data-confirm="Mark this item as sold? It will move out of your active listings." data-confirm-title="Mark as sold?">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
+                    <input type="hidden" name="action" value="sold">
+                    <button type="submit">Mark sold</button>
+                  </form>
                   <form class="inline-action" method="post" action="claim-status.php">
                     <?= csrf_field() ?>
                     <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
@@ -118,7 +124,7 @@ $error   = flash_get('error');
                     <button type="submit">Mark found</button>
                   </form>
                 <?php endif; ?>
-                <form class="inline-action" method="post" action="claim-status.php" onsubmit="return confirm('Remove this claim permanently?');">
+                <form class="inline-action" method="post" action="claim-status.php" data-confirm="This permanently removes the claim and its photo. This can't be undone." data-confirm-title="Delete this item?">
                   <?= csrf_field() ?>
                   <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
                   <input type="hidden" name="action" value="delete">
@@ -135,6 +141,6 @@ $error   = flash_get('error');
 </main>
 
 <?php require __DIR__ . '/includes/chat-widget.php'; ?>
-<script src="assets/js/main.js"></script>
+<script src="<?= asset_url('js/main.js') ?>"></script>
 </body>
 </html>

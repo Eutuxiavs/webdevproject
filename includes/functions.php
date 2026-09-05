@@ -71,7 +71,8 @@ function verify_csrf(): void {
  * dimensions your source image actually is.
  */
 function brand_mark(int $size = 34): void {
-    echo '<img src="' . asset_path('img/logo.png') . '" alt="YONZON" style="width:' . $size . 'px; height:' . $size . 'px; object-fit:contain;">';
+    echo '<img src="' . asset_path('img/logo.png') . '" alt="YONZON" '
+       . 'style="width:' . $size . 'px; height:' . $size . 'px; object-fit:contain; display:block;">';
 }
 
 /**
@@ -82,6 +83,20 @@ function brand_mark(int $size = 34): void {
  */
 function asset_path(string $relative): string {
     return 'assets/' . ltrim($relative, '/');
+}
+
+/**
+ * Same as asset_path(), but appends ?v=<file modified time> automatically.
+ * This means every time you save a new version of style.css or main.js,
+ * the URL changes and the browser is FORCED to fetch the new file instead
+ * of serving a stale cached copy. Use this for CSS/JS; use asset_path()
+ * for things like the logo where cache-busting doesn't matter.
+ */
+function asset_url(string $relative): string {
+    $path = asset_path($relative);
+    $absolute = dirname(__DIR__) . '/' . $path; // functions.php lives in includes/, so climb up one
+    $version = @filemtime($absolute);
+    return $path . ($version ? ('?v=' . $version) : '');
 }
 
 /* ---------------- Categories (shared by add-item + browse filters) ---------------- */
@@ -183,7 +198,51 @@ function handle_photo_upload(string $inputName): ?string {
         throw new RuntimeException('Could not save the uploaded file.');
     }
 
+    resize_image_if_needed($dest, $mime, 1200);
+
     return $filename;
+}
+
+/**
+ * Shrinks an image down to $maxWidth (preserving aspect ratio) if it's
+ * wider than that, so a 5MB phone photo doesn't sit on disk untouched.
+ * Silently does nothing if the GD extension isn't available — resizing
+ * is a nice-to-have, not something that should break uploads if it's
+ * missing.
+ */
+function resize_image_if_needed(string $path, string $mime, int $maxWidth): void {
+    if (!extension_loaded('gd')) return;
+
+    [$width, $height] = getimagesize($path) ?: [0, 0];
+    if (!$width || $width <= $maxWidth) return; // already small enough
+
+    $source = match ($mime) {
+        'image/jpeg' => imagecreatefromjpeg($path),
+        'image/png'  => imagecreatefrompng($path),
+        'image/webp' => imagecreatefromwebp($path),
+        default       => null,
+    };
+    if (!$source) return;
+
+    $newHeight = (int)round($height * ($maxWidth / $width));
+    $resized = imagecreatetruecolor($maxWidth, $newHeight);
+
+    if ($mime === 'image/png') {
+        imagealphablending($resized, false);
+        imagesavealpha($resized, true);
+    }
+
+    imagecopyresampled($resized, $source, 0, 0, 0, 0, $maxWidth, $newHeight, $width, $height);
+
+    match ($mime) {
+        'image/jpeg' => imagejpeg($resized, $path, 85),
+        'image/png'  => imagepng($resized, $path, 6),
+        'image/webp' => imagewebp($resized, $path, 85),
+        default       => null,
+    };
+
+    imagedestroy($source);
+    imagedestroy($resized);
 }
 
 /* ---------------- Flash messages ---------------- */
