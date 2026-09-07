@@ -37,11 +37,29 @@ CREATE TABLE IF NOT EXISTS items (
   serial_number VARCHAR(100) DEFAULT NULL,
   notes TEXT DEFAULT NULL,
   photo_path VARCHAR(255) DEFAULT NULL,
-  status ENUM('owned','warranty','lost','for_sale','sold') NOT NULL DEFAULT 'owned',
+  status ENUM('owned','warranty','lost','for_sale','reserved','sold') NOT NULL DEFAULT 'owned',
   price DECIMAL(10,2) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------- Offers (the buy / accept / mutual-confirm flow) ----------
+CREATE TABLE IF NOT EXISTS offers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  item_id INT NOT NULL,
+  buyer_id INT NOT NULL,
+  seller_id INT NOT NULL,
+  offer_price DECIMAL(10,2) NOT NULL,
+  message VARCHAR(500) DEFAULT NULL,
+  status ENUM('pending','accepted','declined','cancelled','completed') NOT NULL DEFAULT 'pending',
+  buyer_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+  seller_confirmed TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE CASCADE,
+  FOREIGN KEY (buyer_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (seller_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- ---------- Conversations (one per buyer+listing pair) ----------

@@ -9,7 +9,7 @@ $stmt = $pdo->prepare('SELECT * FROM items WHERE user_id = ? ORDER BY created_at
 $stmt->execute([$user['id']]);
 $items = $stmt->fetchAll();
 
-$counts = ['owned' => 0, 'for_sale' => 0, 'lost' => 0, 'warranty' => 0, 'sold' => 0];
+$counts = ['owned' => 0, 'for_sale' => 0, 'lost' => 0, 'warranty' => 0, 'reserved' => 0, 'sold' => 0];
 foreach ($items as $it) { $counts[$it['status']] = ($counts[$it['status']] ?? 0) + 1; }
 
 $success = flash_get('success');
@@ -37,6 +37,7 @@ $error   = flash_get('error');
       <nav class="dash-nav">
         <a href="dashboard.php" class="active">Dashboard</a>
         <a href="browse.php">Marketplace</a>
+        <a href="offers.php">Offers</a>
         <a href="profile.php">Profile</a>
       </nav>
       <div class="dash-user">
@@ -123,6 +124,8 @@ $error   = flash_get('error');
                     <input type="hidden" name="action" value="found">
                     <button type="submit">Mark found</button>
                   </form>
+                <?php elseif ($item['status'] === 'reserved'): ?>
+                  <a href="offers.php">View offer &rarr;</a>
                 <?php endif; ?>
                 <form class="inline-action" method="post" action="claim-status.php" data-confirm="This permanently removes the claim and its photo. This can't be undone." data-confirm-title="Delete this item?">
                   <?= csrf_field() ?>

@@ -82,6 +82,7 @@ function filter_url(string $status, string $category, string $search = '', int $
       <nav class="dash-nav">
         <a href="dashboard.php">Dashboard</a>
         <a href="browse.php" class="active">Marketplace</a>
+        <a href="offers.php">Offers</a>
         <a href="profile.php">Profile</a>
       </nav>
       <div class="dash-user">
@@ -154,7 +155,10 @@ function filter_url(string $status, string $category, string $search = '', int $
 
             <?php if ((int)$item['user_id'] !== $user['id']): ?>
               <?php if ($item['status'] === 'for_sale'): ?>
-                <a class="btn btn-ghost" style="width:100%; text-align:center; margin-top:14px;" href="start-conversation.php?item=<?= (int)$item['id'] ?>">Message Seller</a>
+                <div style="display:flex; gap:8px; margin-top:14px;">
+                  <a class="btn btn-primary" style="flex:1; text-align:center;" href="offer-create.php?item=<?= (int)$item['id'] ?>">Make Offer</a>
+                  <a class="btn btn-ghost" style="flex:1; text-align:center;" href="start-conversation.php?item=<?= (int)$item['id'] ?>">Message</a>
+                </div>
               <?php else: ?>
                 <a class="btn btn-ghost" style="width:100%; text-align:center; margin-top:14px;" href="start-conversation.php?item=<?= (int)$item['id'] ?>">I Found This</a>
               <?php endif; ?>

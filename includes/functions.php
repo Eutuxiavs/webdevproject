@@ -136,6 +136,7 @@ function status_label(string $status): string {
         'warranty' => 'Warranty',
         'lost'     => 'Lost',
         'for_sale' => 'For Sale',
+        'reserved' => 'Offer Pending',
         'sold'     => 'Sold',
     ];
     return $map[$status] ?? ucfirst($status);
@@ -145,6 +146,7 @@ function status_class(string $status): string {
     switch ($status) {
         case 'lost':     return 'lost';
         case 'for_sale': return 'sale';
+        case 'reserved': return 'reserved';
         case 'sold':     return 'sold';
         default:         return '';
     }

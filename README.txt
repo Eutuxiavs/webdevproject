@@ -53,8 +53,42 @@ no password). If you set a MySQL password yourself, update DB_PASS in
 includes/config.php to match.
 
 
-DATABASE NAME
+WHAT'S NEW: BUY / SELL WITH OWNERSHIP TRANSFER
 ----------------------------------------------------
+This adds a real transaction flow instead of just listing items:
+
+1. A buyer clicks "Make Offer" on a for-sale item (browse.php) and
+   proposes a price — offer-create.php.
+2. The seller sees it under Offers > "Offers you've received" and can
+   Accept or Decline. Accepting reserves the item (status becomes
+   "reserved") and auto-declines every other pending offer on it.
+3. Once accepted, BOTH sides see a "Confirm handover complete" button.
+   Ownership does NOT transfer when the seller accepts, and does NOT
+   transfer when only one side confirms — it only transfers once BOTH
+   the buyer and seller have independently clicked confirm.
+4. The moment both confirmations are in, offer-action.php runs the
+   actual transfer: the item's user_id changes to the buyer, status
+   goes back to "owned", and the price is cleared. The item now shows
+   up in the BUYER's dashboard, not the seller's.
+5. Either side can cancel an accepted-but-not-yet-completed deal,
+   which puts the item back up for sale.
+
+WHY THIS DESIGN: I can't build real payment escrow (that needs an
+actual payment processor and real legal/financial infrastructure), so
+this is the strongest safeguard achievable in-app: neither person can
+unilaterally transfer ownership, fake a completed sale, or walk away
+with something without the other side's explicit agreement. It won't
+stop someone from lying about having sent payment through some outside
+method — no software fix can — which is why offers.php also tells users
+plainly to arrange payment through the chat first and meet safely for
+in-person handoffs.
+
+New files: offer-create.php, offers.php, offer-action.php
+New DB table: offers (see database.sql)
+New item status: "reserved" (shown as "Offer Pending")
+
+
+
 The database is named "webdevproject" (not "yonzon_claim"). If you'd
 already imported the old schema under a different name, drop it first —
 database.sql has the exact DROP DATABASE commands at the top as a comment.

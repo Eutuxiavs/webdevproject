@@ -640,3 +640,45 @@ footer{padding:0;}
 }
 .page-pill:hover{border-color:var(--accent-l); color:var(--paper);}
 .page-pill.active{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600;}
+
+/* ============================================================
+   OFFERS / TRANSACTION SAFETY
+   ============================================================ */
+.reg-status.reserved{border-color:#e8b64a; color:#e8b64a;}
+
+.safety-note{
+  border:1px solid var(--line); border-left:3px solid var(--accent-l); border-radius:4px;
+  padding:18px 22px; font-size:12.5px; color:var(--paper-dim); line-height:1.7;
+  background:rgba(100,100,232,0.04); max-width:760px;
+}
+.safety-note strong{color:var(--paper); font-weight:600;}
+
+.offer-item-preview{
+  display:flex; gap:20px; align-items:center; margin-bottom:28px;
+  border:1px solid var(--line); border-radius:6px; padding:18px;
+  background:linear-gradient(165deg, var(--ink-2), var(--ink) 75%); max-width:640px;
+}
+.offer-item-photo{
+  width:80px; height:80px; border-radius:4px; overflow:hidden; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(120px 90px at 30% 20%, var(--accent-glow-soft), transparent 72%), linear-gradient(160deg, var(--ink-3), var(--ink-2));
+}
+.offer-item-photo img{width:100%; height:100%; object-fit:cover;}
+.offer-item-photo svg{width:32px; height:32px; stroke:var(--paper-dim);}
+
+.offer-list{display:flex; flex-direction:column; gap:14px;}
+.offer-row{
+  display:flex; gap:18px; border:1px solid var(--line); border-radius:6px; padding:18px;
+  background:linear-gradient(165deg, var(--ink-2), var(--ink) 75%);
+}
+.offer-photo{
+  width:64px; height:64px; border-radius:4px; overflow:hidden; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(100px 70px at 30% 20%, var(--accent-glow-soft), transparent 72%), linear-gradient(160deg, var(--ink-3), var(--ink-2));
+}
+.offer-photo img{width:100%; height:100%; object-fit:cover;}
+.offer-photo svg{width:26px; height:26px; stroke:var(--paper-dim);}
+.offer-body{flex:1; min-width:0;}
+.offer-top{display:flex; justify-content:space-between; gap:16px;}
+.offer-msg{font-size:12.5px; color:var(--paper-faint); font-style:italic; margin-top:10px; line-height:1.5;}
+.offer-waiting{font-size:11.5px; color:var(--paper-faint); font-style:italic; align-self:center;}

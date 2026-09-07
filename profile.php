@@ -70,6 +70,7 @@ $totalItems = array_sum($statCounts);
       <nav class="dash-nav">
         <a href="dashboard.php">Dashboard</a>
         <a href="browse.php">Marketplace</a>
+        <a href="offers.php">Offers</a>
         <a href="profile.php" class="active">Profile</a>
       </nav>
       <div class="dash-user">
