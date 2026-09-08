@@ -76,7 +76,7 @@ $ratingCount = (int)$ratingRow['n'];
       <nav class="dash-nav">
         <a href="dashboard.php">Dashboard</a>
         <a href="browse.php">Marketplace</a>
-        <a href="offers.php">Offers<?= pending_offer_badge($pdo, $user['id']) ?></a>
+        <a href="offers.php">Offers<?= pending_offer_badge($pdo, $userId) ?></a>
         <a href="profile.php" class="active">Profile</a>
       </nav>
       <div class="dash-user">

@@ -5,6 +5,32 @@
  * with safer cookie defaults BEFORE any output is sent.
  */
 
+// ---- Global error handling: log real errors, show users a friendly message ----
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+ini_set('error_log', __DIR__ . '/../error.log');
+error_reporting(E_ALL);
+
+function yz_friendly_error_page(): void {
+    http_response_code(500);
+    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Something went wrong</title></head>'
+       . '<body style="font-family:sans-serif; text-align:center; padding:80px 20px; background:#111; color:#eee;">'
+       . '<h1>Something went wrong.</h1><p>Please try again, or head back to the <a href="dashboard.php" style="color:#8ab4f8;">dashboard</a>.</p>'
+       . '</body></html>';
+}
+
+set_exception_handler(function (Throwable $e) {
+    error_log($e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    yz_friendly_error_page();
+    exit;
+});
+
+set_error_handler(function ($severity, $message, $file, $line) {
+    if (!(error_reporting() & $severity)) return false; // respects @ suppression
+    error_log("PHP Warning/Notice: $message in $file:$line");
+    return true; // don't let it fall through to default display
+});
+
 // ---- Session hardening (must run before session_start) ----
 session_set_cookie_params([
     'lifetime' => 0,
@@ -33,9 +59,9 @@ try {
         ]
     );
 } catch (PDOException $e) {
+    error_log('DB connection failed: ' . $e->getMessage());
     http_response_code(500);
-    die('Database connection failed. Make sure MySQL is running in XAMPP '
-      . 'and that database.sql has been imported. Details: ' . $e->getMessage());
+    die('Database connection failed. Please make sure the database server is running and try again.');
 }
 
 // ---- Upload directory ----

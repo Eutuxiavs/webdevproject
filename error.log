@@ -1,0 +1,2 @@
+[08-Sep-2026 15:18:37 Europe/Berlin] SQLSTATE[42S02]: Base table or view not found: 1146 Table 'webdevproject.password_resets' doesn't exist in C:\xampp\htdocs\WEBDEVPROJECT\forgot-password.php:22
+[08-Sep-2026 15:18:42 Europe/Berlin] SQLSTATE[42S02]: Base table or view not found: 1146 Table 'webdevproject.password_resets' doesn't exist in C:\xampp\htdocs\WEBDEVPROJECT\forgot-password.php:22
