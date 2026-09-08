@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS users (
   avatar_path VARCHAR(255) DEFAULT NULL,
   bio TEXT DEFAULT NULL,
   business VARCHAR(150) DEFAULT NULL,
+  role ENUM('user','admin') NOT NULL DEFAULT 'user',
+  is_suspended TINYINT(1) NOT NULL DEFAULT 0,
   failed_login_count INT NOT NULL DEFAULT 0,
   locked_until TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -43,6 +45,8 @@ CREATE TABLE IF NOT EXISTS items (
   price DECIMAL(10,2) DEFAULT NULL,
   condition_status ENUM('new','like_new','good','fair') DEFAULT NULL,
   city VARCHAR(100) DEFAULT NULL,
+  is_featured TINYINT(1) NOT NULL DEFAULT 0,
+  featured_until TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -159,6 +163,20 @@ CREATE TABLE IF NOT EXISTS blocks (
   UNIQUE KEY uniq_block (blocker_id, blocked_id),
   FOREIGN KEY (blocker_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (blocked_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------- Platform revenue (simulated — no real payment processor) ----------
+CREATE TABLE IF NOT EXISTS platform_revenue (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  source ENUM('transaction_fee','featured_listing') NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  user_id INT DEFAULT NULL,
+  item_id INT DEFAULT NULL,
+  offer_id INT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (item_id) REFERENCES items(id) ON DELETE SET NULL,
+  FOREIGN KEY (offer_id) REFERENCES offers(id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
 -- No seed data on purpose — register a real account through the app

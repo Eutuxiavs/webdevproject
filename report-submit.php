@@ -36,41 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+$pageTitle = 'Report listing — YONZON CLAIM';
+$activeNav = '';
+require __DIR__ . '/includes/header-dash.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Report listing — YONZON CLAIM</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,480;0,9..144,600;1,9..144,460&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= asset_url('css/style.css') ?>">
-</head>
-<body class="dash-body">
 
-<div class="letterhead-top dash-letterhead">
-  <div class="dash-wrap">
-    <div class="lh-main" style="padding:18px 0;">
-      <a class="mark" href="dashboard.php">
-        <?php brand_mark(34); ?>
-        <div class="mark-word"><div class="a">YONZON</div><div class="b">Claim Registry</div></div>
-      </a>
-      <nav class="dash-nav">
-        <a href="dashboard.php">Dashboard</a>
-        <a href="browse.php">Marketplace</a>
-        <a href="offers.php">Offers<?= pending_offer_badge($pdo, $user['id']) ?></a>
-        <a href="profile.php">Profile</a>
-      </nav>
-      <div class="dash-user">
-        <span><?= e($user['name']) ?></span>
-        <a class="btn btn-ghost" href="logout.php">Log out</a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<main class="dash-wrap dash-main">
   <div class="dash-head">
     <div>
       <div class="dash-summary">Listed by <?= e($item['owner_name']) ?></div>
@@ -96,7 +66,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </form>
 </main>
 
-<?php require __DIR__ . '/includes/chat-widget.php'; ?>
-<script src="<?= asset_url('js/main.js') ?>"></script>
-</body>
-</html>
+<?php require __DIR__ . '/includes/footer-dash.php'; ?>

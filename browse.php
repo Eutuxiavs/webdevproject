@@ -46,7 +46,7 @@ $page = min($page, $totalPages);
 $offset = ($page - 1) * $perPage;
 
 $sql = 'SELECT i.*, u.name AS owner_name FROM items i JOIN users u ON u.id = i.user_id'
-     . $where . ' ORDER BY i.updated_at DESC LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
+     . $where . ' ORDER BY (i.is_featured = 1 AND i.featured_until > NOW()) DESC, i.updated_at DESC LIMIT ' . (int)$perPage . ' OFFSET ' . (int)$offset;
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
@@ -60,41 +60,22 @@ function filter_url(string $status, string $category, string $search = '', int $
     if ($page > 1) $q['page'] = $page;
     return 'browse.php' . ($q ? '?' . http_build_query($q) : '');
 }
+$recentIds = get_recently_viewed_ids();
+$recentItems = [];
+if ($recentIds) {
+    $placeholders = implode(',', array_fill(0, count($recentIds), '?'));
+    $stmt = $pdo->prepare("SELECT id, name, category, photo_path, status, claim_id FROM items WHERE id IN ($placeholders) AND status IN ('for_sale','lost')");
+    $stmt->execute($recentIds);
+    $byId = [];
+    foreach ($stmt->fetchAll() as $row) { $byId[$row['id']] = $row; }
+    foreach ($recentIds as $id) { if (isset($byId[$id])) { $recentItems[] = $byId[$id]; } } // preserve most-recent-first order
+}
+
+$pageTitle = 'Marketplace — YONZON CLAIM';
+$activeNav = 'browse';
+require __DIR__ . '/includes/header-dash.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Marketplace — YONZON CLAIM</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,480;0,9..144,600;1,9..144,460&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= asset_url('css/style.css') ?>">
-</head>
-<body class="dash-body">
 
-<div class="letterhead-top dash-letterhead">
-  <div class="dash-wrap">
-    <div class="lh-main" style="padding:18px 0;">
-      <a class="mark" href="dashboard.php">
-        <?php brand_mark(34); ?>
-        <div class="mark-word"><div class="a">YONZON</div><div class="b">Claim Registry</div></div>
-      </a>
-      <nav class="dash-nav">
-        <a href="dashboard.php">Dashboard</a>
-        <a href="browse.php" class="active">Marketplace</a>
-        <a href="offers.php">Offers<?= pending_offer_badge($pdo, $user['id']) ?></a>
-        <a href="profile.php">Profile</a>
-      </nav>
-      <div class="dash-user">
-        <span><?= e($user['name']) ?></span>
-        <a class="btn btn-ghost" href="logout.php">Log out</a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<main class="dash-wrap dash-main">
   <div class="dash-head">
     <div>
       <div class="dash-summary">Buy, sell, and help reunite lost items</div>
@@ -102,6 +83,26 @@ function filter_url(string $status, string $category, string $search = '', int $
     </div>
     <a class="btn btn-primary" href="claim-add.php">+ Register an item</a>
   </div>
+
+  <?php if ($recentItems): ?>
+    <div class="recent-strip">
+      <div class="recent-label">Recently viewed</div>
+      <div class="recent-row">
+        <?php foreach ($recentItems as $r): ?>
+          <a href="offer-create.php?item=<?= (int)$r['id'] ?>" class="recent-item">
+            <div class="recent-photo">
+              <?php if ($r['photo_path']): ?>
+                <img src="<?= e(UPLOAD_URL . $r['photo_path']) ?>" alt="">
+              <?php else: ?>
+                <?= yz_icon(category_icon_key($r['category'])) ?>
+              <?php endif; ?>
+            </div>
+            <span><?= e($r['name']) ?></span>
+          </a>
+        <?php endforeach; ?>
+      </div>
+    </div>
+  <?php endif; ?>
 
   <div class="filter-bar">
     <a class="filter-pill <?= $statusFilter === 'all' ? 'active' : '' ?>" href="<?= e(filter_url('all', $categoryFilter)) ?>">All Listings</a>
@@ -131,9 +132,11 @@ function filter_url(string $status, string $category, string $search = '', int $
   <?php else: ?>
     <div class="reg-grid">
       <?php foreach ($listings as $item): ?>
-        <div class="reg-card">
+        <div class="reg-card <?= ($item['is_featured'] && strtotime($item['featured_until']) > time()) ? 'featured-card' : '' ?>">
           <div class="reg-image">
-            <?php if ($item['status'] === 'for_sale'): ?>
+            <?php if ($item['is_featured'] && strtotime($item['featured_until']) > time()): ?>
+              <div class="reg-featured">⭐ Featured</div>
+            <?php elseif ($item['status'] === 'for_sale'): ?>
               <div class="reg-forsale">For Sale</div>
             <?php endif; ?>
             <?php if ($item['photo_path']): ?>
@@ -189,7 +192,4 @@ function filter_url(string $status, string $category, string $search = '', int $
   <?php endif; ?>
 </main>
 
-<?php require __DIR__ . '/includes/chat-widget.php'; ?>
-<script src="<?= asset_url('js/main.js') ?>"></script>
-</body>
-</html>
+<?php require __DIR__ . '/includes/footer-dash.php'; ?>

@@ -34,41 +34,11 @@ foreach ($items as $it) { $counts[$it['status']] = ($counts[$it['status']] ?? 0)
 
 $success = flash_get('success');
 $error   = flash_get('error');
+$pageTitle = 'Dashboard — YONZON CLAIM';
+$activeNav = 'dashboard';
+require __DIR__ . '/includes/header-dash.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard — YONZON CLAIM</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,480;0,9..144,600;1,9..144,460&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= asset_url('css/style.css') ?>">
-</head>
-<body class="dash-body">
 
-<div class="letterhead-top dash-letterhead">
-  <div class="dash-wrap">
-    <div class="lh-main" style="padding:18px 0;">
-      <a class="mark" href="dashboard.php">
-        <?php brand_mark(34); ?>
-        <div class="mark-word"><div class="a">YONZON</div><div class="b">Claim Registry</div></div>
-      </a>
-      <nav class="dash-nav">
-        <a href="dashboard.php" class="active">Dashboard</a>
-        <a href="browse.php">Marketplace</a>
-        <a href="offers.php">Offers<?= pending_offer_badge($pdo, $user['id']) ?></a>
-        <a href="profile.php">Profile</a>
-      </nav>
-      <div class="dash-user">
-        <span><?= e($user['name']) ?></span>
-        <a class="btn btn-ghost" href="logout.php">Log out</a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<main class="dash-wrap dash-main">
 
   <?php if ($success): ?><div class="alert alert-success"><?= e($success) ?></div><?php endif; ?>
   <?php if ($error): ?><div class="alert alert-error"><?= e($error) ?></div><?php endif; ?>
@@ -128,6 +98,16 @@ $error   = flash_get('error');
                     <button type="submit">Report lost</button>
                   </form>
                 <?php elseif ($item['status'] === 'for_sale'): ?>
+                  <?php if (!$item['is_featured'] || strtotime($item['featured_until']) < time()): ?>
+                    <form class="inline-action" method="post" action="claim-status.php" data-confirm="Feature this listing for $<?= number_format(FEATURED_LISTING_FEE, 2) ?>? It'll be pinned to the top of the marketplace for <?= FEATURED_LISTING_DAYS ?> days. (No real payment is processed — this is a simulated charge for demo purposes.)" data-confirm-title="Feature this listing?">
+                      <?= csrf_field() ?>
+                      <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
+                      <input type="hidden" name="action" value="feature">
+                      <button type="submit">⭐ Feature ($<?= number_format(FEATURED_LISTING_FEE, 2) ?>)</button>
+                    </form>
+                  <?php else: ?>
+                    <span class="offer-waiting">Featured until <?= e(date('d M', strtotime($item['featured_until']))) ?></span>
+                  <?php endif; ?>
                   <form class="inline-action" method="post" action="claim-status.php" data-confirm="Mark this item as sold? It will move out of your active listings." data-confirm-title="Mark as sold?">
                     <?= csrf_field() ?>
                     <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
@@ -166,7 +146,4 @@ $error   = flash_get('error');
 
 </main>
 
-<?php require __DIR__ . '/includes/chat-widget.php'; ?>
-<script src="<?= asset_url('js/main.js') ?>"></script>
-</body>
-</html>
+<?php require __DIR__ . '/includes/footer-dash.php'; ?>

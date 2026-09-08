@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="alert alert-success" style="margin-bottom:20px;">If that email exists on an account, a reset link has been generated.</div>
       <?php endif; ?>
 
-      <form method="post" novalidate>
+      <form method="post" novalidate class="js-validate">
         <?= csrf_field() ?>
         <label class="field">
           <span>Email</span>
@@ -77,5 +77,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 </div>
 
+<script src="<?= asset_url('js/main.js') ?>"></script>
 </body>
 </html>

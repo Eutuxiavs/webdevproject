@@ -372,3 +372,30 @@ function clean_text(string $value): string {
     $value = trim($value);
     return preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $value);
 }
+
+/* ---------------- Admin / monetization ---------------- */
+const PLATFORM_FEE_PERCENT = 5;      // % taken from completed cash sales
+const FEATURED_LISTING_FEE = 5.00;   // flat fee to feature a listing
+const FEATURED_LISTING_DAYS = 14;    // how long a featured listing stays pinned
+
+function is_admin(PDO $pdo, int $userId): bool {
+    $stmt = $pdo->prepare('SELECT role FROM users WHERE id = ?');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+    return $row && $row['role'] === 'admin';
+}
+
+function require_admin(PDO $pdo): void {
+    require_login();
+    if (!is_admin($pdo, current_user_id())) {
+        http_response_code(403);
+        die('Admins only.');
+    }
+}
+
+function is_suspended(PDO $pdo, int $userId): bool {
+    $stmt = $pdo->prepare('SELECT is_suspended FROM users WHERE id = ?');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+    return $row && (bool)$row['is_suspended'];
+}

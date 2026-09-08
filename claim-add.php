@@ -1,81 +1,130 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/functions.php';
+require_login();
 
-if (current_user_id()) { header('Location: dashboard.php'); exit; }
-
+$user = current_user();
 $errors = [];
-$resetLink = null;
+$categories = yz_categories();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
-    $email = trim($_POST['email'] ?? '');
 
-    $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ?');
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
+    $name     = trim($_POST['name'] ?? '');
+    $category = trim($_POST['category'] ?? '');
+    $serial   = trim($_POST['serial_number'] ?? '');
+    $notes    = trim($_POST['notes'] ?? '');
+    $condition = $_POST['condition_status'] ?? '';
+    $city     = trim($_POST['city'] ?? '');
 
-    // Always show the same message whether or not the email exists —
-    // otherwise this becomes a way to find out which emails are registered.
-    if ($user) {
-        $token = bin2hex(random_bytes(32));
+    if (!array_key_exists($condition, yz_conditions())) $condition = null;
+
+    if ($name === '' || mb_strlen($name) > 150) $errors[] = 'Enter an item name.';
+    if (!in_array($category, $categories, true)) $errors[] = 'Choose a valid category.';
+
+    $photoFilename = null;
+    try {
+        $photoFilename = handle_photo_upload('photo');
+    } catch (RuntimeException $ex) {
+        $errors[] = $ex->getMessage();
+    }
+
+    if (!$errors) {
+        $pdo->beginTransaction();
         $stmt = $pdo->prepare(
-            'INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))'
+            'INSERT INTO items (user_id, claim_id, name, category, serial_number, notes, photo_path, condition_status, city, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, "owned")'
         );
-        $stmt->execute([$user['id'], $token]);
-        $resetLink = 'reset-password.php?token=' . $token;
+        // Insert with a placeholder claim_id first, then fill in the real one using the new row id.
+        $stmt->execute([$user['id'], 'PENDING', $name, $category, $serial ?: null, $notes ?: null, $photoFilename, $condition, $city ?: null]);
+        $newId = (int)$pdo->lastInsertId();
+        $claimId = generate_claim_id($category, $newId);
+        $pdo->prepare('UPDATE items SET claim_id = ? WHERE id = ?')->execute([$claimId, $newId]);
+        $pdo->commit();
+
+        flash_set('success', "\"$name\" is registered. Claim ID: $claimId");
+        header('Location: dashboard.php');
+        exit;
     }
 }
+$pageTitle = 'Register an item — YONZON CLAIM';
+$activeNav = '';
+require __DIR__ . '/includes/header-dash.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Forgot password — YONZON CLAIM</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,480;0,9..144,600;1,9..144,460&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="<?= asset_url('css/style.css') ?>">
-</head>
-<body class="auth-body">
 
-<div class="auth-shell">
-  <a class="auth-mark" href="index.php">
-    <?php brand_mark(24); ?>
-    <span>YONZON CLAIM</span>
-  </a>
-
-  <div class="auth-card">
-    <div class="kicker">Account recovery</div>
-    <h1 class="auth-title">Reset your password.</h1>
-    <p class="auth-sub">Enter the email on your account.</p>
-
-    <?php if ($resetLink): ?>
-      <div class="alert alert-success" style="margin-bottom:20px;">
-        If that email exists, a reset link has been generated. <strong>This project has no email server
-        configured</strong>, so here it is directly instead of being emailed:<br>
-        <a href="<?= e($resetLink) ?>" style="color:var(--accent-l); word-break:break-all;"><?= e($resetLink) ?></a>
-        <br><small style="color:var(--paper-faint);">Expires in 1 hour. In a real deployment this link
-        would be sent to the email address instead of shown here.</small>
-      </div>
-    <?php else: ?>
-      <?php if ($_SERVER['REQUEST_METHOD'] === 'POST'): ?>
-        <div class="alert alert-success" style="margin-bottom:20px;">If that email exists on an account, a reset link has been generated.</div>
-      <?php endif; ?>
-
-      <form method="post" novalidate>
-        <?= csrf_field() ?>
-        <label class="field">
-          <span>Email</span>
-          <input type="email" name="email" required autofocus>
-        </label>
-        <button type="submit" class="btn btn-primary auth-submit">Send reset link</button>
-      </form>
-    <?php endif; ?>
-
-    <p class="auth-switch"><a href="login.php">Back to log in</a></p>
+  <div class="dash-head">
+    <div>
+      <div class="dash-summary">Filing procedure &middot; Step 1 of 1</div>
+      <h1 class="dash-title">Register an item.</h1>
+    </div>
+    <a class="btn btn-ghost" href="dashboard.php">&larr; Back to registry</a>
   </div>
-</div>
 
-</body>
-</html>
+  <?php if ($errors): ?>
+    <div class="alert alert-error">
+      <ul><?php foreach ($errors as $err): ?><li><?= e($err) ?></li><?php endforeach; ?></ul>
+    </div>
+  <?php endif; ?>
+
+  <form method="post" enctype="multipart/form-data" class="form-card js-validate" novalidate>
+    <?= csrf_field() ?>
+
+    <div class="form-row">
+      <label class="field">
+        <span>Item name</span>
+        <input type="text" name="name" value="<?= e($_POST['name'] ?? '') ?>" required maxlength="150" placeholder="e.g. Leica Camera M11">
+      </label>
+      <label class="field">
+        <span>Category</span>
+        <select name="category" required>
+          <option value="">Choose one</option>
+          <?php foreach ($categories as $cat): ?>
+            <option value="<?= e($cat) ?>" <?= (($_POST['category'] ?? '') === $cat) ? 'selected' : '' ?>><?= e($cat) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+    </div>
+
+    <div class="form-row">
+      <label class="field">
+        <span>Serial number <em>(optional)</em></span>
+        <input type="text" name="serial_number" value="<?= e($_POST['serial_number'] ?? '') ?>" maxlength="100" placeholder="Kept private, never shown publicly">
+      </label>
+      <label class="field">
+        <span>Condition <em>(optional)</em></span>
+        <select name="condition_status">
+          <option value="">Not specified</option>
+          <?php foreach (yz_conditions() as $key => $label): ?>
+            <option value="<?= e($key) ?>" <?= (($_POST['condition_status'] ?? '') === $key) ? 'selected' : '' ?>><?= e($label) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+    </div>
+
+    <label class="field">
+      <span>City <em>(optional — helps local buyers find it)</em></span>
+      <input type="text" name="city" value="<?= e($_POST['city'] ?? '') ?>" maxlength="100" placeholder="e.g. Cebu City">
+    </label>
+
+    <label class="field">
+      <span>Notes <em>(optional)</em></span>
+      <textarea name="notes" rows="3" maxlength="2000" placeholder="Purchase details, condition, anything worth recording."><?= e($_POST['notes'] ?? '') ?></textarea>
+    </label>
+
+    <label class="field upload-field" id="photoField">
+      <span>Photo <em>(optional — you can add one later when listing for sale)</em></span>
+      <div class="upload-drop" id="uploadDrop">
+        <img id="uploadPreview" class="upload-preview" alt="" style="display:none;">
+        <div class="upload-placeholder" id="uploadPlaceholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 16l-5-5-4 4-3-3-6 6"/></svg>
+          <span>Click to upload a photo</span>
+        </div>
+        <input type="file" name="photo" id="photoInput" accept="image/png, image/jpeg, image/webp">
+      </div>
+    </label>
+
+    <button type="submit" class="btn btn-primary form-submit">File this claim</button>
+  </form>
+</main>
+
+<?php require __DIR__ . '/includes/footer-dash.php'; ?>

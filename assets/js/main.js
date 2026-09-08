@@ -304,3 +304,63 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
+
+/* ============================================================
+   CLIENT-SIDE FORM VALIDATION
+   Real JS validation with inline messages, on top of (never instead
+   of) the server-side validation every form already has. This is
+   purely a UX layer — the server never trusts this and re-validates
+   everything itself.
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('form.js-validate').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      var valid = true;
+
+      form.querySelectorAll('[required]').forEach(function (field) {
+        clearFieldError(field);
+        if (!field.value.trim()) {
+          showFieldError(field, 'This field is required.');
+          valid = false;
+        } else if (field.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value)) {
+          showFieldError(field, 'Enter a valid email address.');
+          valid = false;
+        } else if (field.type === 'password' && field.minLength > 0 && field.value.length < field.minLength) {
+          showFieldError(field, 'Must be at least ' + field.minLength + ' characters.');
+          valid = false;
+        } else if (field.type === 'number') {
+          var num = parseFloat(field.value);
+          var min = field.min !== '' ? parseFloat(field.min) : null;
+          if (isNaN(num) || (min !== null && num < min)) {
+            showFieldError(field, 'Enter a valid amount.');
+            valid = false;
+          }
+        }
+      });
+
+      // Password-confirmation matching, wherever both fields exist on the same form.
+      var pw = form.querySelector('input[name="password"]');
+      var confirm = form.querySelector('input[name="confirm"]');
+      if (pw && confirm && confirm.value && pw.value !== confirm.value) {
+        showFieldError(confirm, 'Passwords do not match.');
+        valid = false;
+      }
+
+      if (!valid) e.preventDefault();
+    });
+  });
+
+  function showFieldError(field, message) {
+    field.classList.add('field-invalid');
+    var msg = document.createElement('div');
+    msg.className = 'field-error-msg';
+    msg.textContent = message;
+    field.insertAdjacentElement('afterend', msg);
+  }
+
+  function clearFieldError(field) {
+    field.classList.remove('field-invalid');
+    var next = field.nextElementSibling;
+    if (next && next.classList.contains('field-error-msg')) next.remove();
+  }
+});

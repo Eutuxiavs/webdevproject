@@ -95,7 +95,7 @@ $registerHref = $user ? 'claim-add.php' : 'register.php';
         </div>
       </div>
       <div class="hero-mark">
-        <img src="<?= e(asset_path('img/logo.png')) ?>" alt="" style="width:80%; max-width:420px; opacity:0.9;">
+        <img src="<?= e(asset_path('img/logo-diamond.png')) ?>" alt="" style="width:100%; max-width:260px; margin:0 auto; display:block; opacity:0.9;">
       </div>
     </div>
   </div>
@@ -137,12 +137,7 @@ $registerHref = $user ? 'claim-add.php' : 'register.php';
           <i></i><i class="off"></i><i></i><i></i><i class="off"></i>
         </div>
         <div class="seal-wrap">
-          <svg viewBox="0 0 120 120" fill="none">
-            <circle cx="60" cy="60" r="56" stroke="url(#silverGrad)" stroke-width="1"/>
-            <circle cx="60" cy="60" r="47" stroke="url(#silverGrad)" stroke-width="0.6"/>
-            <path d="M60 34L82 60L60 86L38 60L60 34Z" stroke="url(#silverGrad)" stroke-width="1"/>
-            <path d="M48 48L72 72M72 48L48 72" stroke="url(#silverGrad)" stroke-width="1"/>
-          </svg>
+          <img src="<?= e(asset_path('img/logo-diamond.png')) ?>" alt="" style="width:64px; height:64px; object-fit:contain; display:block;">
         </div>
       </div>
     </div>

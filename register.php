@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
     <?php endif; ?>
 
-    <form method="post" novalidate>
+    <form method="post" novalidate class="js-validate">
       <?= csrf_field() ?>
       <label class="field">
         <span>Full name</span>
@@ -95,5 +95,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 </div>
 
+<script src="<?= asset_url('js/main.js') ?>"></script>
 </body>
 </html>

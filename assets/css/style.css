@@ -787,3 +787,54 @@ footer{padding:0;}
   color:#e8a0a0 !important; font-size:11px !important;
 }
 .dispute-link:hover{background:#e5484d !important; color:#fff !important; border-color:#e5484d !important;}
+
+/* ============================================================
+   RECENTLY VIEWED STRIP (browse.php)
+   ============================================================ */
+.recent-strip{margin-top:28px; padding-top:24px; border-top:1px solid var(--line-soft);}
+.recent-label{font-size:10px; letter-spacing:0.16em; text-transform:uppercase; color:var(--paper-faint); margin-bottom:14px;}
+.recent-row{display:flex; gap:14px; overflow-x:auto; padding-bottom:6px;}
+.recent-item{
+  flex:0 0 auto; width:100px; text-decoration:none; color:var(--paper-dim);
+  display:flex; flex-direction:column; gap:8px; text-align:center;
+}
+.recent-photo{
+  width:100px; height:100px; border-radius:6px; overflow:hidden; border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(160deg, var(--ink-3), var(--ink-2)); transition:border-color .2s ease;
+}
+.recent-item:hover .recent-photo{border-color:var(--accent-l);}
+.recent-photo img{width:100%; height:100%; object-fit:cover;}
+.recent-photo svg{width:28px; height:28px; stroke:var(--paper-faint);}
+.recent-item span{font-size:10.5px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+.field-invalid{border-color:#e5484d !important; box-shadow:0 0 0 3px rgba(229,72,77,0.15) !important;}
+.field-error-msg{color:#e88686; font-size:11px; margin-top:6px;}
+
+/* ============================================================
+   FEATURED LISTINGS
+   ============================================================ */
+.featured-card{border-color:#e8b64a !important; box-shadow:0 0 0 1px rgba(232,182,74,0.3), 0 20px 50px -26px rgba(0,0,0,0.6);}
+.reg-featured{
+  position:absolute; top:12px; left:12px; background:#e8b64a; color:#1a1400;
+  font-size:8.5px; letter-spacing:0.1em; text-transform:uppercase; padding:4px 9px;
+  border-radius:20px; font-weight:700; box-shadow:0 8px 18px -4px rgba(232,182,74,0.5);
+}
+
+/* ============================================================
+   ADMIN PANEL
+   ============================================================ */
+.admin-stats{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:32px 0 44px;}
+.admin-stat{border:1px solid var(--line); border-radius:6px; padding:20px; background:linear-gradient(165deg, var(--ink-2), var(--ink) 75%);}
+.admin-stat .n{font-family:'Fraunces'; font-style:italic; font-size:28px; color:var(--accent-l); margin-bottom:4px;}
+.admin-stat .l{font-size:10.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--paper-faint);}
+.admin-table{width:100%; border-collapse:collapse; margin-top:16px;}
+.admin-table th{
+  text-align:left; font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--paper-faint);
+  padding:10px 14px; border-bottom:1px solid var(--line);
+}
+.admin-table td{padding:12px 14px; border-bottom:1px solid var(--line-soft); font-size:12.5px; color:var(--paper-dim); vertical-align:top;}
+.admin-table tr:hover td{background:rgba(255,255,255,0.015);}
+.admin-role{font-size:9px; padding:2px 8px; border-radius:20px; border:1px solid var(--line); text-transform:uppercase; letter-spacing:0.06em;}
+.admin-role.admin{border-color:var(--accent-l); color:var(--accent-l);}
+@media (max-width:900px){ .admin-stats{grid-template-columns:1fr 1fr;} .admin-table{display:block; overflow-x:auto;} }

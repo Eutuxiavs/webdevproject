@@ -44,6 +44,22 @@ switch ($action) {
         flash_set('success', "\"{$item['name']}\" is marked sold. Nice.");
         break;
 
+    case 'feature':
+        if ($item['status'] !== 'for_sale') { break; }
+
+        $pdo->beginTransaction();
+        $pdo->prepare(
+            'UPDATE items SET is_featured = 1, featured_until = DATE_ADD(NOW(), INTERVAL ' . FEATURED_LISTING_DAYS . ' DAY)
+             WHERE id = ? AND user_id = ?'
+        )->execute([$id, $user['id']]);
+        $pdo->prepare(
+            'INSERT INTO platform_revenue (source, amount, user_id, item_id) VALUES ("featured_listing", ?, ?, ?)'
+        )->execute([FEATURED_LISTING_FEE, $user['id'], $id]);
+        $pdo->commit();
+
+        flash_set('success', "\"{$item['name']}\" is now featured for " . FEATURED_LISTING_DAYS . " days. (Simulated $" . number_format(FEATURED_LISTING_FEE, 2) . " charge — no real payment was processed.)");
+        break;
+
     case 'cancel_sale':
         $pdo->prepare('UPDATE items SET status = "owned", price = NULL WHERE id = ? AND user_id = ?')
             ->execute([$id, $user['id']]);

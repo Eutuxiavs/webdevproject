@@ -53,6 +53,60 @@ no password). If you set a MySQL password yourself, update DB_PASS in
 includes/config.php to match.
 
 
+RUBRIC SELF-ASSESSMENT (honest, not just "we did it all")
+----------------------------------------------------
+This section exists because "did you complete the rubric" deserves a
+real answer, not a checkmark.
+
+1. Functionality (20) — Feature-complete: auth, item CRUD, marketplace,
+   trading, chat, offers with mutual-confirm transfer, reviews, blocking,
+   reporting (now with an actual admin queue to act on reports, not just
+   a table nobody sees), and a monetization/admin layer. CAVEAT: this
+   was never executed in a live PHP environment during development (no
+   PHP interpreter was available to run it against), so "no bugs" can't
+   be honestly guaranteed — only that every file has been checked for
+   syntax balance and logical consistency by hand, and one real bug (a
+   missing closing PHP tag during a refactor) was caught and fixed
+   before being sent to you.
+
+2. PHP Code Quality (20) — WAS the weakest area: the same nav/header
+   block was duplicated across 13 files. Fixed this pass: extracted into
+   includes/header-dash.php and includes/footer-dash.php, used by every
+   logged-in page. This is still classic PHP (logic and HTML share the
+   same file, not a templating engine) — normal for an intro course, but
+   worth knowing it's not full separation of concerns if "no mixed
+   logic/HTML" is graded literally.
+
+3. Database Integration (20) — Every query is a PDO prepared statement.
+   Audited specifically for this; see the SQL INJECTION AUDIT section
+   above. This is the strongest area.
+
+4. Form Handling & Validation (10) — WAS only server-side + native HTML5
+   attributes. Fixed this pass: real client-side JS validation
+   (assets/js/main.js, form.js-validate) with inline error messages,
+   layered on top of (never replacing) server-side validation.
+
+5. Session/Auth (10) — Hashed passwords, session regeneration on login,
+   httponly/samesite cookies, rate limiting after 5 failed attempts,
+   password reset flow. Strong area.
+
+6. Error Handling (5) — WAS a real problem: config.php printed the raw
+   database exception message straight to the browser if the connection
+   failed. Fixed this pass: errors are logged server-side only
+   (error_log), the browser gets a generic friendly message, and a
+   global exception handler now catches anything uncaught app-wide so a
+   PHP fatal error can never show raw output to a visitor.
+
+7. UI/UX (10) — Consistent design system, deliberate typography, dark
+   theme, iterated on repeatedly. Strong area.
+
+8. Version Control (5) — CANNOT BE GRADED FROM HERE. This depends
+   entirely on your actual git history: regular commits over time (not
+   one giant commit at the end), a working .gitignore, clean structure.
+   I've reminded you to push after every change — whether that actually
+   happened is outside what I can verify or fix retroactively.
+
+
 SQL INJECTION AUDIT (done on request)
 ----------------------------------------------------
 Every single database call in this project uses PDO prepared statements
@@ -73,6 +127,52 @@ If you need to write this up: PDO's prepared statements work by sending
 the query structure and the data separately to MySQL — user input is
 never parsed as part of the SQL syntax, so there's no way for someone to
 inject something like `' OR '1'='1` and change what the query does.
+
+
+WHAT'S NEW: ADMIN PANEL + MONETIZATION
+----------------------------------------------------
+IMPORTANT — SET YOURSELF AS ADMIN FIRST:
+There's no self-service way to become an admin (that would be a
+security hole). After registering your account normally, run this in
+phpMyAdmin, replacing the email with your own:
+
+    UPDATE users SET role = 'admin' WHERE email = 'you@example.com';
+
+Once that's done, an "Admin" link appears in your nav automatically.
+
+WHAT ADMIN CAN DO (admin.php + admin-action.php):
+- See site-wide stats: total users, items, completed deals, revenue.
+- Moderate reports: every report filed via report-submit.php now shows
+  up in a real queue. Dismiss it, remove the reported item, or suspend
+  the reported user — all from the same row.
+- Manage users: suspend/unsuspend any account. Suspended users can't
+  log in (checked in login.php) until an admin reverses it.
+- See a revenue log: every featured-listing purchase and every
+  completed cash deal's platform fee, in order, with who it came from.
+
+MONETIZATION — TWO MECHANISMS, BOTH LIVE (SIMULATED, NO REAL PAYMENTS):
+1. Transaction fee — when a cash (or item+cash) deal completes,
+   offer-action.php automatically logs a 5% fee (PLATFORM_FEE_PERCENT in
+   includes/functions.php) into platform_revenue. No money actually
+   moves — there's no payment processor wired in — but the mechanism
+   and the bookkeeping are real and demonstrable.
+
+2. Featured listings — on the dashboard, any for-sale item shows a
+   "⭐ Feature ($5.00)" button. Clicking it (after the confirm modal)
+   pins that item to the top of the marketplace for 14 days and logs a
+   $5 charge to platform_revenue. Featured items get a gold border and
+   badge on browse.php and sort above everything else.
+
+OTHER MONETIZATION IDEAS (not built, with reasoning): Verified Seller
+subscription tier (needs recurring billing logic — bigger scope),
+per-listing insertion fees (conflicts with the app's free-registration
+pitch), sponsored/ad slots on the homepage (doesn't fit a peer
+marketplace's trust model well).
+
+New files: admin.php, admin-action.php
+New DB table: platform_revenue
+users table changed: added role, is_suspended
+items table changed: added is_featured, featured_until
 
 
 WHAT'S NEW: SECURITY, TRUST, AND ACCOUNT FEATURES

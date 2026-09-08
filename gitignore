@@ -1,0 +1,13 @@
+# Uploaded user files shouldn't be committed — they're user data, not code,
+# and can grow large fast. Keep the folder in git via .gitkeep, ignore its contents.
+uploads/*
+!uploads/.gitkeep
+
+# Common local-environment cruft
+.DS_Store
+Thumbs.db
+*.log
+
+# If you ever create a local override for DB credentials, ignore it here
+# instead of committing real credentials:
+# includes/config.local.php

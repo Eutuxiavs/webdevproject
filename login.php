@@ -20,8 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Too many failed attempts. This account is temporarily locked — try again in a few minutes.';
     } elseif (!$user || !password_verify($password, $user['password_hash'])) {
         if ($user) { record_failed_login($pdo, (int)$user['id']); }
-        // Same message either way — don't reveal which part was wrong.
+        // Same message either way — don't reveal which part was wrong,
+        // and don't reveal suspension status either (checked below only
+        // once we already know the password was correct).
         $errors[] = 'Incorrect email or password.';
+    } elseif (is_suspended($pdo, (int)$user['id'])) {
+        $errors[] = 'This account has been suspended. Contact support if you believe this is a mistake.';
     } else {
         reset_login_attempts($pdo, (int)$user['id']);
         session_regenerate_id(true);
@@ -60,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
     <?php endif; ?>
 
-    <form method="post" novalidate>
+    <form method="post" novalidate class="js-validate">
       <?= csrf_field() ?>
       <label class="field">
         <span>Email</span>
@@ -78,5 +82,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 </div>
 
+<script src="<?= asset_url('js/main.js') ?>"></script>
 </body>
 </html>

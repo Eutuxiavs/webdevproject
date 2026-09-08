@@ -62,7 +62,7 @@ if ($reset && $_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <?php if ($reset): ?>
-      <form method="post" novalidate>
+      <form method="post" novalidate class="js-validate">
         <?= csrf_field() ?>
         <input type="hidden" name="token" value="<?= e($token) ?>">
         <label class="field">
@@ -81,5 +81,6 @@ if ($reset && $_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 </div>
 
+<script src="<?= asset_url('js/main.js') ?>"></script>
 </body>
 </html>
