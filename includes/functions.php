@@ -104,6 +104,36 @@ function yz_categories(): array {
     return ['Photography', 'Timepieces', 'Electronics', 'Cycling', 'Instruments', 'Footwear', 'Other'];
 }
 
+/* ---------------- Offers: expiry + notifications + ratings ---------------- */
+
+/** Auto-expires pending offers older than 7 days. Call once near the top of any page that shows offers. */
+function auto_expire_offers(PDO $pdo): void {
+    $pdo->exec(
+        'UPDATE offers SET status = "expired"
+         WHERE status = "pending" AND expires_at IS NOT NULL AND expires_at < NOW()'
+    );
+}
+
+/** Renders a small red badge with the count of pending offers this user needs to act on (as seller). */
+function pending_offer_badge(PDO $pdo, int $userId): string {
+    $stmt = $pdo->prepare('SELECT COUNT(*) AS n FROM offers WHERE seller_id = ? AND status = "pending"');
+    $stmt->execute([$userId]);
+    $n = (int)$stmt->fetch()['n'];
+    if ($n === 0) return '';
+    $label = $n > 99 ? '99+' : (string)$n;
+    return '<span class="nav-badge">' . e($label) . '</span>';
+}
+
+/** Renders a compact star display for a 1-5 rating (rounded to nearest whole star). */
+function star_display(float $rating): string {
+    $rounded = (int)round($rating);
+    $out = '';
+    for ($i = 1; $i <= 5; $i++) {
+        $out .= $i <= $rounded ? '&#9733;' : '&#9734;'; // filled / empty star
+    }
+    return $out;
+}
+
 
 function category_icon_key(string $category): string {
     $map = [
@@ -255,4 +285,90 @@ function flash_get(string $key): ?string {
     $msg = $_SESSION['flash'][$key] ?? null;
     unset($_SESSION['flash'][$key]);
     return $msg;
+}
+
+/* ---------------- Login rate limiting ---------------- */
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 10;
+
+/** Returns true if this account is currently locked out from too many failed attempts. */
+function is_account_locked(PDO $pdo, int $userId): bool {
+    $stmt = $pdo->prepare('SELECT locked_until FROM users WHERE id = ?');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+    return $row && $row['locked_until'] && strtotime($row['locked_until']) > time();
+}
+
+/** Records a failed login attempt, locking the account temporarily after too many. */
+function record_failed_login(PDO $pdo, int $userId): void {
+    $stmt = $pdo->prepare('UPDATE users SET failed_login_count = failed_login_count + 1 WHERE id = ?');
+    $stmt->execute([$userId]);
+
+    $stmt = $pdo->prepare('SELECT failed_login_count FROM users WHERE id = ?');
+    $stmt->execute([$userId]);
+    $count = (int)$stmt->fetch()['failed_login_count'];
+
+    if ($count >= MAX_LOGIN_ATTEMPTS) {
+        $stmt = $pdo->prepare('UPDATE users SET locked_until = DATE_ADD(NOW(), INTERVAL ' . LOCKOUT_MINUTES . ' MINUTE) WHERE id = ?');
+        $stmt->execute([$userId]);
+    }
+}
+
+/** Clears the failed-attempt counter after a successful login. */
+function reset_login_attempts(PDO $pdo, int $userId): void {
+    $pdo->prepare('UPDATE users SET failed_login_count = 0, locked_until = NULL WHERE id = ?')->execute([$userId]);
+}
+
+/* ---------------- Blocking ---------------- */
+
+/** True if either user has blocked the other (blocking is treated as mutual). */
+function users_blocked(PDO $pdo, int $userA, int $userB): bool {
+    $stmt = $pdo->prepare(
+        'SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?) LIMIT 1'
+    );
+    $stmt->execute([$userA, $userB, $userB, $userA]);
+    return (bool)$stmt->fetch();
+}
+
+/* ---------------- Verified badge ---------------- */
+
+/** A lightweight "verified" signal: has this user completed at least one deal? */
+function is_verified_trader(PDO $pdo, int $userId): bool {
+    $stmt = $pdo->prepare(
+        'SELECT 1 FROM offers WHERE (buyer_id = ? OR seller_id = ?) AND status = "completed" LIMIT 1'
+    );
+    $stmt->execute([$userId, $userId]);
+    return (bool)$stmt->fetch();
+}
+
+/* ---------------- Recently viewed (session-based, no DB needed) ---------------- */
+
+/** Adds an item id to the front of the recently-viewed list, capped at 8 entries. */
+function track_recently_viewed(int $itemId): void {
+    $list = $_SESSION['recently_viewed'] ?? [];
+    $list = array_values(array_diff($list, [$itemId])); // remove if already present
+    array_unshift($list, $itemId);
+    $_SESSION['recently_viewed'] = array_slice($list, 0, 8);
+}
+
+function get_recently_viewed_ids(): array {
+    return $_SESSION['recently_viewed'] ?? [];
+}
+
+/* ---------------- Condition / misc labels ---------------- */
+function condition_label(?string $condition): string {
+    $map = ['new' => 'New', 'like_new' => 'Like New', 'good' => 'Good', 'fair' => 'Fair'];
+    return $condition ? ($map[$condition] ?? ucfirst($condition)) : '';
+}
+
+function yz_conditions(): array {
+    return ['new' => 'New', 'like_new' => 'Like New', 'good' => 'Good', 'fair' => 'Fair'];
+}
+
+/** Defense-in-depth text cleanup for free-text fields (trims + strips control characters).
+ *  This is NOT what stops SQL injection — prepared statements do that. This just keeps
+ *  stray control characters out of things like names and messages. */
+function clean_text(string $value): string {
+    $value = trim($value);
+    return preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $value);
 }

@@ -16,10 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
-    if (!$user || !password_verify($password, $user['password_hash'])) {
+    if ($user && is_account_locked($pdo, (int)$user['id'])) {
+        $errors[] = 'Too many failed attempts. This account is temporarily locked — try again in a few minutes.';
+    } elseif (!$user || !password_verify($password, $user['password_hash'])) {
+        if ($user) { record_failed_login($pdo, (int)$user['id']); }
         // Same message either way — don't reveal which part was wrong.
         $errors[] = 'Incorrect email or password.';
     } else {
+        reset_login_attempts($pdo, (int)$user['id']);
         session_regenerate_id(true);
         $_SESSION['user_id'] = (int)$user['id'];
         header('Location: dashboard.php');
@@ -69,6 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <button type="submit" class="btn btn-primary auth-submit">Log in</button>
     </form>
 
+    <p class="auth-switch"><a href="forgot-password.php">Forgot your password?</a></p>
     <p class="auth-switch">New here? <a href="register.php">Create an account</a></p>
   </div>
 </div>

@@ -44,9 +44,15 @@ $success = flash_get('success');
 $stmt = $pdo->prepare('SELECT status, COUNT(*) AS n FROM items WHERE user_id = ? GROUP BY status');
 $stmt->execute([$userId]);
 $statRows = $stmt->fetchAll();
-$statCounts = ['owned' => 0, 'for_sale' => 0, 'lost' => 0, 'warranty' => 0, 'sold' => 0];
+$statCounts = ['owned' => 0, 'for_sale' => 0, 'lost' => 0, 'warranty' => 0, 'reserved' => 0, 'sold' => 0];
 foreach ($statRows as $row) { $statCounts[$row['status']] = (int)$row['n']; }
 $totalItems = array_sum($statCounts);
+
+$stmt = $pdo->prepare('SELECT AVG(rating) AS avg_rating, COUNT(*) AS n FROM reviews WHERE reviewee_id = ?');
+$stmt->execute([$userId]);
+$ratingRow = $stmt->fetch();
+$avgRating = $ratingRow['avg_rating'] ? (float)$ratingRow['avg_rating'] : null;
+$ratingCount = (int)$ratingRow['n'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -70,7 +76,7 @@ $totalItems = array_sum($statCounts);
       <nav class="dash-nav">
         <a href="dashboard.php">Dashboard</a>
         <a href="browse.php">Marketplace</a>
-        <a href="offers.php">Offers</a>
+        <a href="offers.php">Offers<?= pending_offer_badge($pdo, $user['id']) ?></a>
         <a href="profile.php" class="active">Profile</a>
       </nav>
       <div class="dash-user">
@@ -103,8 +109,13 @@ $totalItems = array_sum($statCounts);
       <?php endif; ?>
     </div>
     <div>
-      <div class="profile-name"><?= e($profile['name']) ?></div>
+      <div class="profile-name"><?= e($profile['name']) ?> <?php if (is_verified_trader($pdo, $userId)): ?><span class="verified-badge">&#10003; Verified Trader</span><?php endif; ?></div>
       <?php if ($profile['business']): ?><div class="profile-business"><?= e($profile['business']) ?></div><?php endif; ?>
+      <?php if ($avgRating !== null): ?>
+        <div class="profile-rating"><span class="stars"><?= star_display($avgRating) ?></span> <?= number_format($avgRating, 1) ?> (<?= $ratingCount ?> review<?= $ratingCount === 1 ? '' : 's' ?>)</div>
+      <?php else: ?>
+        <div class="dash-summary" style="margin-top:6px;">No reviews yet</div>
+      <?php endif; ?>
       <div class="dash-summary" style="margin-top:8px;"><?= $totalItems ?> filed &middot; <?= $statCounts['for_sale'] ?> for sale &middot; <?= $statCounts['lost'] ?> lost</div>
     </div>
   </div>
@@ -141,6 +152,10 @@ $totalItems = array_sum($statCounts);
 
     <button type="submit" class="btn btn-primary form-submit">Save profile</button>
   </form>
+
+  <div style="margin-top:40px; padding-top:24px; border-top:1px solid var(--line-soft);">
+    <a href="delete-account.php" style="color:#e88686; font-size:12.5px;">Delete my account</a>
+  </div>
 </main>
 
 <?php require __DIR__ . '/includes/chat-widget.php'; ?>

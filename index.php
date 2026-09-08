@@ -376,6 +376,8 @@ $registerHref = $user ? 'claim-add.php' : 'register.php';
         <div class="h">Company</div>
         <a href="#">About</a>
         <a href="#">Contact</a>
+        <a href="terms.php">Terms of Service</a>
+        <a href="privacy.php">Privacy Policy</a>
       </div>
       <div class="foot-col">
         <div class="h">Filed by</div>

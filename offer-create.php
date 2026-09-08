@@ -4,57 +4,178 @@ require_once __DIR__ . '/includes/functions.php';
 require_login();
 
 $user = current_user();
-$itemId = (int)($_GET['item'] ?? $_POST['item'] ?? 0);
+auto_expire_offers($pdo);
 
-$stmt = $pdo->prepare('SELECT i.*, u.name AS owner_name FROM items i JOIN users u ON u.id = i.user_id WHERE i.id = ? AND i.status = "for_sale"');
-$stmt->execute([$itemId]);
-$item = $stmt->fetch();
+$stmt = $pdo->prepare(
+    'SELECT o.*, i.name AS item_name, i.claim_id, i.photo_path, i.category,
+            u.name AS buyer_name,
+            ti.name AS trade_item_name, ti.photo_path AS trade_item_photo, ti.category AS trade_item_category
+     FROM offers o
+     JOIN items i ON i.id = o.item_id
+     JOIN users u ON u.id = o.buyer_id
+     LEFT JOIN items ti ON ti.id = o.trade_item_id
+     WHERE o.seller_id = ?
+     ORDER BY o.status = "pending" DESC, o.updated_at DESC'
+);
+$stmt->execute([$user['id']]);
+$incoming = $stmt->fetchAll();
 
-if (!$item) {
-    flash_set('error', 'That listing is no longer available for offers.');
-    header('Location: browse.php');
-    exit;
+$stmt = $pdo->prepare(
+    'SELECT o.*, i.name AS item_name, i.claim_id, i.photo_path, i.category,
+            u.name AS seller_name,
+            ti.name AS trade_item_name, ti.photo_path AS trade_item_photo, ti.category AS trade_item_category
+     FROM offers o
+     JOIN items i ON i.id = o.item_id
+     JOIN users u ON u.id = o.seller_id
+     LEFT JOIN items ti ON ti.id = o.trade_item_id
+     WHERE o.buyer_id = ?
+     ORDER BY o.status = "pending" DESC, o.updated_at DESC'
+);
+$stmt->execute([$user['id']]);
+$outgoing = $stmt->fetchAll();
+
+// Which completed offers has this user already reviewed?
+$stmt = $pdo->prepare('SELECT offer_id FROM reviews WHERE reviewer_id = ?');
+$stmt->execute([$user['id']]);
+$reviewedOfferIds = array_column($stmt->fetchAll(), 'offer_id');
+
+$success = flash_get('success');
+$error   = flash_get('error');
+
+function offer_status_pill(string $status): string {
+    $map = [
+        'pending'   => ['Pending', ''],
+        'accepted'  => ['Accepted', 'sale'],
+        'declined'  => ['Declined', 'lost'],
+        'cancelled' => ['Cancelled', 'lost'],
+        'completed' => ['Completed', 'sold'],
+        'expired'   => ['Expired', 'lost'],
+        'disputed'  => ['Disputed', 'lost'],
+    ];
+    [$label, $class] = $map[$status] ?? [ucfirst($status), ''];
+    return '<span class="reg-status ' . $class . '">' . e($label) . '</span>';
 }
-if ((int)$item['user_id'] === $user['id']) {
-    flash_set('error', "You can't make an offer on your own item.");
-    header('Location: browse.php');
-    exit;
+
+function offer_terms_line(array $o): string {
+    $parts = [];
+    if ((float)$o['offer_price'] > 0) $parts[] = '$' . number_format((float)$o['offer_price'], 2);
+    if ($o['trade_item_name']) $parts[] = 'trade: ' . htmlspecialchars($o['trade_item_name']);
+    return $parts ? implode(' + ', $parts) : 'Cash offer';
 }
 
-// One pending offer per buyer per item — reuse it instead of duplicating.
-$stmt = $pdo->prepare('SELECT id FROM offers WHERE item_id = ? AND buyer_id = ? AND status = "pending"');
-$stmt->execute([$item['id'], $user['id']]);
-if ($stmt->fetch()) {
-    flash_set('success', 'You already have a pending offer on this item.');
-    header('Location: offers.php');
-    exit;
-}
+function render_offer_row(array $o, string $perspective, PDO $pdo, int $userId, array $reviewedOfferIds): void {
+    $otherName = $perspective === 'incoming' ? $o['buyer_name'] : $o['seller_name'];
+    $otherLabel = $perspective === 'incoming' ? 'From' : 'Sold by';
+    $myConfirmedKey = $perspective === 'incoming' ? 'seller_confirmed' : 'buyer_confirmed';
+    ?>
+    <div class="offer-row">
+      <div class="offer-photo">
+        <?php if ($o['photo_path']): ?>
+          <img src="<?= e(UPLOAD_URL . $o['photo_path']) ?>" alt="">
+        <?php else: ?>
+          <?= yz_icon(category_icon_key($o['category'])) ?>
+        <?php endif; ?>
+      </div>
+      <div class="offer-body">
+        <div class="offer-top">
+          <div>
+            <div class="reg-name" style="font-size:16px;"><?= e($o['item_name']) ?></div>
+            <div class="dash-summary" style="margin:4px 0 0;"><?= e($otherLabel) ?> <?= e($otherName) ?> &middot; <span class="mono"><?= e($o['claim_id']) ?></span></div>
+          </div>
+          <div style="text-align:right;">
+            <div class="inv-price"><?= offer_terms_line($o) ?></div>
+            <?= offer_status_pill($o['status']) ?>
+          </div>
+        </div>
 
-$errors = [];
+        <?php if ($o['trade_item_id']): ?>
+          <div class="offer-trade-item">
+            <div class="offer-trade-photo">
+              <?php if ($o['trade_item_photo']): ?>
+                <img src="<?= e(UPLOAD_URL . $o['trade_item_photo']) ?>" alt="">
+              <?php else: ?>
+                <?= yz_icon(category_icon_key($o['trade_item_category'])) ?>
+              <?php endif; ?>
+            </div>
+            <span>Offered in trade: <strong><?= e($o['trade_item_name']) ?></strong></span>
+          </div>
+        <?php endif; ?>
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    verify_csrf();
+        <?php if ($o['message']): ?><div class="offer-msg">&ldquo;<?= e($o['message']) ?>&rdquo;</div><?php endif; ?>
 
-    $offerPrice = trim($_POST['offer_price'] ?? '');
-    $message    = trim($_POST['message'] ?? '');
+        <?php if ($o['status'] === 'accepted'): ?>
+          <div class="meetup-box">
+            <div class="meetup-label">Meetup / handover plan</div>
+            <?php if ($o['meetup_note']): ?>
+              <div class="meetup-current"><?= nl2br(e($o['meetup_note'])) ?></div>
+            <?php else: ?>
+              <div class="meetup-current empty">Nothing set yet — agree on a time and place.</div>
+            <?php endif; ?>
+            <form method="post" action="offer-action.php" class="meetup-form">
+              <?= csrf_field() ?>
+              <input type="hidden" name="offer_id" value="<?= (int)$o['id'] ?>">
+              <input type="hidden" name="action" value="set_meetup">
+              <input type="text" name="meetup_note" maxlength="300" placeholder="e.g. Sat 2pm, SM foodcourt" value="<?= e($o['meetup_note'] ?? '') ?>">
+              <button type="submit">Update</button>
+            </form>
+          </div>
+        <?php endif; ?>
 
-    if (!is_numeric($offerPrice) || (float)$offerPrice <= 0) {
-        $errors[] = 'Enter a valid offer amount.';
-    }
-    if (mb_strlen($message) > 500) {
-        $errors[] = 'Message is too long (max 500 characters).';
-    }
-
-    if (!$errors) {
-        $stmt = $pdo->prepare(
-            'INSERT INTO offers (item_id, buyer_id, seller_id, offer_price, message) VALUES (?, ?, ?, ?, ?)'
-        );
-        $stmt->execute([$item['id'], $user['id'], $item['user_id'], (float)$offerPrice, $message ?: null]);
-
-        flash_set('success', "Offer sent to {$item['owner_name']}. You'll be notified when they respond.");
-        header('Location: offers.php');
-        exit;
-    }
+        <div class="inv-actions" style="margin-top:14px;">
+          <?php if ($o['status'] === 'pending' && $perspective === 'incoming'): ?>
+            <form class="inline-action" method="post" action="offer-action.php" data-confirm="Accept this offer? Other pending offers on this item will be automatically declined.">
+              <?= csrf_field() ?>
+              <input type="hidden" name="offer_id" value="<?= (int)$o['id'] ?>">
+              <input type="hidden" name="action" value="accept">
+              <button type="submit">Accept</button>
+            </form>
+            <form class="inline-action" method="post" action="offer-action.php">
+              <?= csrf_field() ?>
+              <input type="hidden" name="offer_id" value="<?= (int)$o['id'] ?>">
+              <input type="hidden" name="action" value="decline">
+              <button type="submit" class="dash-danger">Decline</button>
+            </form>
+          <?php elseif ($o['status'] === 'pending' && $perspective === 'outgoing'): ?>
+            <form class="inline-action" method="post" action="offer-action.php" data-confirm="Withdraw this offer?">
+              <?= csrf_field() ?>
+              <input type="hidden" name="offer_id" value="<?= (int)$o['id'] ?>">
+              <input type="hidden" name="action" value="withdraw">
+              <button type="submit" class="dash-danger">Withdraw</button>
+            </form>
+          <?php elseif ($o['status'] === 'accepted'): ?>
+            <?php if ($o[$myConfirmedKey]): ?>
+              <span class="offer-waiting">You confirmed. Waiting on the other side.</span>
+            <?php else: ?>
+              <form class="inline-action" method="post" action="offer-action.php" data-confirm="Only confirm once the handover actually happened." data-confirm-title="Confirm handover complete?">
+                <?= csrf_field() ?>
+                <input type="hidden" name="offer_id" value="<?= (int)$o['id'] ?>">
+                <input type="hidden" name="action" value="confirm">
+                <button type="submit">Confirm handover complete</button>
+              </form>
+            <?php endif; ?>
+            <form class="inline-action" method="post" action="offer-action.php" data-confirm="Cancel this deal? Item(s) return to normal." data-confirm-title="Cancel this deal?">
+              <?= csrf_field() ?>
+              <input type="hidden" name="offer_id" value="<?= (int)$o['id'] ?>">
+              <input type="hidden" name="action" value="cancel">
+              <button type="submit" class="dash-danger">Cancel deal</button>
+            </form>
+          <?php elseif ($o['status'] === 'completed'): ?>
+            <?php if (in_array((int)$o['id'], $reviewedOfferIds, true)): ?>
+              <span class="offer-waiting">You've reviewed this deal. Thanks!</span>
+            <?php else: ?>
+              <button type="button" class="review-open-btn" data-offer="<?= (int)$o['id'] ?>" data-name="<?= e($otherName) ?>">Leave a review for <?= e($otherName) ?></button>
+            <?php endif; ?>
+            <form class="inline-action" method="post" action="offer-action.php" data-confirm="Only do this if something actually went wrong with this deal. There's no automated resolution — this just flags it." data-confirm-title="Dispute this deal?">
+              <?= csrf_field() ?>
+              <input type="hidden" name="offer_id" value="<?= (int)$o['id'] ?>">
+              <input type="hidden" name="action" value="dispute">
+              <button type="submit" class="dispute-link">Something went wrong</button>
+            </form>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+    <?php
 }
 ?>
 <!DOCTYPE html>
@@ -62,7 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Make an offer — YONZON CLAIM</title>
+<title>Offers — YONZON CLAIM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,480;0,9..144,600;1,9..144,460&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= asset_url('css/style.css') ?>">
@@ -79,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <nav class="dash-nav">
         <a href="dashboard.php">Dashboard</a>
         <a href="browse.php">Marketplace</a>
-        <a href="offers.php">Offers</a>
+        <a href="offers.php" class="active">Offers<?= pending_offer_badge($pdo, $user['id']) ?></a>
         <a href="profile.php">Profile</a>
       </nav>
       <div class="dash-user">
@@ -93,55 +214,107 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <main class="dash-wrap dash-main">
   <div class="dash-head">
     <div>
-      <div class="dash-summary">Listed by <?= e($item['owner_name']) ?></div>
-      <h1 class="dash-title">Offer on &ldquo;<?= e($item['name']) ?>&rdquo;</h1>
-    </div>
-    <a class="btn btn-ghost" href="browse.php">&larr; Back to marketplace</a>
-  </div>
-
-  <?php if ($errors): ?>
-    <div class="alert alert-error"><ul><?php foreach ($errors as $err): ?><li><?= e($err) ?></li><?php endforeach; ?></ul></div>
-  <?php endif; ?>
-
-  <div class="offer-item-preview">
-    <div class="offer-item-photo">
-      <?php if ($item['photo_path']): ?>
-        <img src="<?= e(UPLOAD_URL . $item['photo_path']) ?>" alt="<?= e($item['name']) ?>">
-      <?php else: ?>
-        <?= yz_icon(category_icon_key($item['category'])) ?>
-      <?php endif; ?>
-    </div>
-    <div>
-      <div class="reg-cat"><?= e($item['category']) ?></div>
-      <div class="reg-name" style="font-size:20px;"><?= e($item['name']) ?></div>
-      <div class="dash-summary" style="margin-top:8px;">Asking price: <strong style="color:var(--accent-l);">$<?= number_format((float)$item['price'], 2) ?></strong></div>
+      <div class="dash-summary">Buying, selling, and trading — safely</div>
+      <h1 class="dash-title">Offers.</h1>
     </div>
   </div>
 
-  <form method="post" class="form-card">
-    <?= csrf_field() ?>
+  <?php if ($success): ?><div class="alert alert-success"><?= e($success) ?></div><?php endif; ?>
+  <?php if ($error): ?><div class="alert alert-error"><?= e($error) ?></div><?php endif; ?>
 
-    <label class="field">
-      <span>Your offer (USD)</span>
-      <input type="number" name="offer_price" step="0.01" min="0.01" value="<?= e($_POST['offer_price'] ?? number_format((float)$item['price'], 2, '.', '')) ?>" required>
-    </label>
+  <div class="safety-note">
+    <strong>How this stays safe:</strong> accepting an offer doesn't transfer anything by itself.
+    Ownership only moves once <strong>both</strong> sides separately click "Confirm handover complete" —
+    meaning after the exchange actually happened. Neither side can force a transfer alone, and either
+    side can cancel before that point. Meet in a safe public place for in-person handoffs, and never
+    send payment before agreeing on the method with the other person through the chat.
+  </div>
 
-    <label class="field">
-      <span>Message to seller <em>(optional)</em></span>
-      <textarea name="message" rows="3" maxlength="500" placeholder="e.g. Can you meet at..."><?= e($_POST['message'] ?? '') ?></textarea>
-    </label>
+  <section style="margin-top:44px;">
+    <div class="kicker">As the seller</div>
+    <h2 class="sec-title" style="font-size:22px; margin-bottom:20px;">Offers you've received</h2>
 
-    <div class="safety-note">
-      <strong>How this stays safe:</strong> the seller must accept your offer before anything happens.
-      After they accept, ownership only transfers once <em>both of you</em> separately confirm the
-      handover went through — neither side can force it alone.
-    </div>
+    <?php if (!$incoming): ?>
+      <div class="dash-empty"><p>No one has made an offer on your items yet.</p></div>
+    <?php else: ?>
+      <div class="offer-list">
+        <?php foreach ($incoming as $o): render_offer_row($o, 'incoming', $pdo, $user['id'], $reviewedOfferIds); endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </section>
 
-    <button type="submit" class="btn btn-primary form-submit">Send offer</button>
-  </form>
+  <section style="margin-top:56px;">
+    <div class="kicker">As the buyer</div>
+    <h2 class="sec-title" style="font-size:22px; margin-bottom:20px;">Offers you've made</h2>
+
+    <?php if (!$outgoing): ?>
+      <div class="dash-empty"><p>You haven't made any offers yet. <a class="btn btn-ghost" href="browse.php" style="margin-top:14px; display:inline-block;">Browse the marketplace</a></p></div>
+    <?php else: ?>
+      <div class="offer-list">
+        <?php foreach ($outgoing as $o): render_offer_row($o, 'outgoing', $pdo, $user['id'], $reviewedOfferIds); endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </section>
 </main>
+
+<!-- Review modal (hidden until a "Leave a review" button is clicked) -->
+<div class="modal-overlay" id="reviewOverlay">
+  <div class="modal-card">
+    <div class="modal-title">Rate this deal</div>
+    <form method="post" action="review-submit.php">
+      <?= csrf_field() ?>
+      <input type="hidden" name="offer_id" id="reviewOfferId" value="">
+      <div class="star-picker" id="starPicker">
+        <button type="button" data-star="1">&#9733;</button>
+        <button type="button" data-star="2">&#9733;</button>
+        <button type="button" data-star="3">&#9733;</button>
+        <button type="button" data-star="4">&#9733;</button>
+        <button type="button" data-star="5">&#9733;</button>
+      </div>
+      <input type="hidden" name="rating" id="ratingInput" value="5">
+      <textarea name="comment" rows="3" maxlength="500" placeholder="Optional comment about the deal…" style="width:100%; margin:16px 0; background:var(--ink-3); border:1px solid var(--line); border-radius:4px; padding:10px 12px; color:var(--paper); font-family:'Inter'; font-size:13px;"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn" id="reviewCancel">Cancel</button>
+        <button type="submit" class="modal-btn danger" style="background:var(--accent); border-color:var(--accent);">Submit review</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <?php require __DIR__ . '/includes/chat-widget.php'; ?>
 <script src="<?= asset_url('js/main.js') ?>"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var overlay = document.getElementById('reviewOverlay');
+  var offerIdInput = document.getElementById('reviewOfferId');
+  var ratingInput = document.getElementById('ratingInput');
+  var stars = document.querySelectorAll('#starPicker button');
+
+  function setStars(n) {
+    stars.forEach(function (s) {
+      s.classList.toggle('filled', parseInt(s.dataset.star, 10) <= n);
+    });
+    ratingInput.value = n;
+  }
+  setStars(5);
+  stars.forEach(function (s) {
+    s.addEventListener('click', function () { setStars(parseInt(s.dataset.star, 10)); });
+  });
+
+  document.querySelectorAll('.review-open-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      offerIdInput.value = btn.dataset.offer;
+      setStars(5);
+      overlay.classList.add('open');
+    });
+  });
+  document.getElementById('reviewCancel').addEventListener('click', function () {
+    overlay.classList.remove('open');
+  });
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+</script>
 </body>
 </html>

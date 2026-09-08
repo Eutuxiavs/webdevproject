@@ -53,6 +53,118 @@ no password). If you set a MySQL password yourself, update DB_PASS in
 includes/config.php to match.
 
 
+SQL INJECTION AUDIT (done on request)
+----------------------------------------------------
+Every single database call in this project uses PDO prepared statements
+with bound parameters ($pdo->prepare(...) + ->execute([...])) — user
+input NEVER gets concatenated directly into a SQL string anywhere in the
+codebase. This was verified by grepping every file that touches $_GET or
+$_POST and confirming zero instances of raw concatenation into SQL.
+
+One spot was hardened anyway even though it wasn't exploitable:
+offer-action.php used to build `"UPDATE offers SET $column = 1"` where
+$column was one of two hardcoded literal strings (never attacker input).
+It's now two fully separate, fully static queries instead — removing
+the only place in the app where a column name was ever interpolated
+into a SQL string, since that pattern is what security reviewers flag
+on sight even when it's provably safe.
+
+If you need to write this up: PDO's prepared statements work by sending
+the query structure and the data separately to MySQL — user input is
+never parsed as part of the SQL syntax, so there's no way for someone to
+inject something like `' OR '1'='1` and change what the query does.
+
+
+WHAT'S NEW: SECURITY, TRUST, AND ACCOUNT FEATURES
+----------------------------------------------------
+- Password reset (forgot-password.php, reset-password.php). Since this
+  project has no mail server configured, the reset link is displayed
+  directly on screen with a clear note explaining it would normally be
+  emailed. Tokens expire after 1 hour and are single-use.
+
+- Login rate limiting — 5 failed attempts locks that account for 10
+  minutes (includes/functions.php: is_account_locked, record_failed_login).
+
+- Item condition (New/Like New/Good/Fair) and city fields on claim-add.php,
+  both optional, both filterable/searchable on browse.php.
+
+- Terms of Service (terms.php) and Privacy Policy (privacy.php), linked
+  from the homepage footer and the registration page.
+
+- Report a listing (report-submit.php) — a link on every marketplace card,
+  writes to the new "reports" table for manual review.
+
+- Block a user (profile-view.php + block-action.php). profile-view.php is
+  a new page — the first place you can view someone ELSE's profile
+  (rating, verified badge, their current listings) rather than just your
+  own. Blocking is enforced in start-conversation.php and offer-create.php,
+  not just hidden in the UI.
+
+- Recently viewed tracking — session-based (no DB table needed), records
+  an item whenever you view its offer page or message about it.
+
+- Account deletion (delete-account.php) — password-confirmed, cascades
+  through existing foreign keys to remove your items, offers, messages,
+  reviews, and reports.
+
+- "Verified Trader" badge — a simple, honest trust signal: shown on any
+  profile with at least one completed deal. Not tied to ID verification
+  (this app doesn't do that) — just "this person has actually completed
+  a transaction here before."
+
+- Dispute a completed deal — a "Something went wrong" button on completed
+  offers, sets status to "disputed". There's no automated resolution
+  process (that would need a real support/admin system) — this exists so
+  both sides have a way to flag a problem rather than silence being the
+  only option.
+
+- Meetup / handover notes — on an accepted (not yet completed) offer,
+  either side can set a short free-text note ("Sat 2pm, mall foodcourt")
+  visible to both, instead of only coordinating through chat.
+
+New files: forgot-password.php, reset-password.php, terms.php, privacy.php,
+  report-submit.php, profile-view.php, block-action.php, delete-account.php
+New DB tables: password_resets, reports, blocks
+users table changed: added failed_login_count, locked_until
+items table changed: added condition_status, city
+offers table changed: added meetup_note, "disputed" status value
+
+
+WHAT'S NEW: TRADING (ITEM-FOR-ITEM AND ITEM+CASH)
+----------------------------------------------------
+offer-create.php now has three tabs: Cash, Trade an item, Item + cash.
+Choosing "Trade" shows a dropdown of the BUYER's own owned items to offer
+in exchange. When the seller accepts a trade offer, BOTH items get
+reserved (not just the seller's), and when both sides confirm the
+handover, BOTH items transfer — the seller's item to the buyer, and the
+buyer's traded item to the seller. Cancelling an accepted trade reverts
+both items back to normal.
+
+WHAT'S NEW: THE OTHER FOUR SUGGESTIONS, IMPLEMENTED
+----------------------------------------------------
+1. Offer expiry — every offer gets a 7-day expiry the moment it's sent.
+   auto_expire_offers() runs at the top of offers.php and offer-action.php
+   and flips any stale pending offer to "expired" automatically.
+
+2. Notification badge — the "Offers" nav link now shows a small red
+   badge with your count of pending incoming offers, on every logged-in
+   page (same red-badge convention as the chat widget).
+
+3. Ownership history — a new "ownership_history" table records every
+   transfer (item, previous owner, new owner, which offer caused it,
+   when). The dashboard now shows "Acquired from [name] on [date]" under
+   any item you got through a completed deal.
+
+4. Reviews — after a deal completes, both sides get a "Leave a review"
+   button on offers.php: a 1-5 star picker plus an optional comment.
+   Your profile page now shows your average rating and review count.
+
+New files: review-submit.php
+New DB tables: ownership_history, reviews
+offers table changed: added offer_type, trade_item_id, expires_at,
+  and a new "expired" status value
+
+
 WHAT'S NEW: BUY / SELL WITH OWNERSHIP TRANSFER
 ----------------------------------------------------
 This adds a real transaction flow instead of just listing items:

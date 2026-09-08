@@ -9,6 +9,26 @@ $stmt = $pdo->prepare('SELECT * FROM items WHERE user_id = ? ORDER BY created_at
 $stmt->execute([$user['id']]);
 $items = $stmt->fetchAll();
 
+// Most recent ownership transfer per item, if any (so we can show "Acquired via trade" etc).
+$acquiredNotes = [];
+if ($items) {
+    $itemIds = array_column($items, 'id');
+    $placeholders = implode(',', array_fill(0, count($itemIds), '?'));
+    $stmt = $pdo->prepare(
+        "SELECT h.item_id, h.transferred_at, u.name AS previous_owner_name
+         FROM ownership_history h
+         JOIN users u ON u.id = h.previous_owner_id
+         WHERE h.item_id IN ($placeholders) AND h.new_owner_id = ?
+         ORDER BY h.transferred_at DESC"
+    );
+    $stmt->execute([...$itemIds, $user['id']]);
+    foreach ($stmt->fetchAll() as $row) {
+        if (!isset($acquiredNotes[$row['item_id']])) { // keep only the most recent per item
+            $acquiredNotes[$row['item_id']] = $row;
+        }
+    }
+}
+
 $counts = ['owned' => 0, 'for_sale' => 0, 'lost' => 0, 'warranty' => 0, 'reserved' => 0, 'sold' => 0];
 foreach ($items as $it) { $counts[$it['status']] = ($counts[$it['status']] ?? 0) + 1; }
 
@@ -37,7 +57,7 @@ $error   = flash_get('error');
       <nav class="dash-nav">
         <a href="dashboard.php" class="active">Dashboard</a>
         <a href="browse.php">Marketplace</a>
-        <a href="offers.php">Offers</a>
+        <a href="offers.php">Offers<?= pending_offer_badge($pdo, $user['id']) ?></a>
         <a href="profile.php">Profile</a>
       </nav>
       <div class="dash-user">
@@ -88,6 +108,9 @@ $error   = flash_get('error');
             <div class="inv-body">
               <div class="inv-cat"><?= e($item['category']) ?></div>
               <div class="inv-name"><?= e($item['name']) ?></div>
+              <?php if (isset($acquiredNotes[$item['id']])): ?>
+                <div class="inv-acquired">Acquired from <?= e($acquiredNotes[$item['id']]['previous_owner_name']) ?> on <?= e(date('d M Y', strtotime($acquiredNotes[$item['id']]['transferred_at']))) ?></div>
+              <?php endif; ?>
               <div class="inv-meta">
                 <span class="inv-id mono"><?= e($item['claim_id']) ?></span>
                 <span class="reg-status <?= status_class($item['status']) ?>"><?= status_label($item['status']) ?></span>

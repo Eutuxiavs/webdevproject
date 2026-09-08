@@ -32,7 +32,8 @@ if ($categoryFilter !== '') {
     $params[] = $categoryFilter;
 }
 if ($search !== '') {
-    $where .= ' AND (i.name LIKE ? OR i.claim_id LIKE ?)';
+    $where .= ' AND (i.name LIKE ? OR i.claim_id LIKE ? OR i.city LIKE ?)';
+    $params[] = '%' . $search . '%';
     $params[] = '%' . $search . '%';
     $params[] = '%' . $search . '%';
 }
@@ -82,7 +83,7 @@ function filter_url(string $status, string $category, string $search = '', int $
       <nav class="dash-nav">
         <a href="dashboard.php">Dashboard</a>
         <a href="browse.php" class="active">Marketplace</a>
-        <a href="offers.php">Offers</a>
+        <a href="offers.php">Offers<?= pending_offer_badge($pdo, $user['id']) ?></a>
         <a href="profile.php">Profile</a>
       </nav>
       <div class="dash-user">
@@ -109,7 +110,7 @@ function filter_url(string $status, string $category, string $search = '', int $
 
     <form method="get" style="margin-left:auto; display:flex; gap:10px;">
       <input type="hidden" name="status" value="<?= e($statusFilter) ?>">
-      <input type="text" name="q" value="<?= e($search) ?>" placeholder="Search name or claim ID…" class="filter-select" style="min-width:200px;">
+      <input type="text" name="q" value="<?= e($search) ?>" placeholder="Search name, claim ID, or city…" class="filter-select" style="min-width:200px;">
       <select name="category" class="filter-select" onchange="this.form.submit()">
         <option value="">All categories</option>
         <?php foreach ($categories as $cat): ?>
@@ -145,22 +146,30 @@ function filter_url(string $status, string $category, string $search = '', int $
             <?php endif; ?>
           </div>
           <div class="reg-content">
-            <div class="reg-cat"><?= e($item['category']) ?></div>
+            <div class="reg-cat"><?= e($item['category']) ?><?php if ($item['condition_status']): ?> &middot; <?= e(condition_label($item['condition_status'])) ?><?php endif; ?></div>
             <div class="reg-name"><?= e($item['name']) ?></div>
+            <?php if ($item['city']): ?><div class="reg-city">📍 <?= e($item['city']) ?></div><?php endif; ?>
             <div class="reg-meta">
               <span class="reg-id mono"><?= e($item['claim_id']) ?></span>
               <span class="reg-status <?= status_class($item['status']) ?>"><?= status_label($item['status']) ?></span>
             </div>
-            <div class="reg-date mono">By <?= e($item['owner_name']) ?></div>
+            <div class="reg-date mono">By <a href="profile-view.php?user=<?= (int)$item['user_id'] ?>" style="color:inherit; text-decoration:underline;"><?= e($item['owner_name']) ?></a></div>
 
             <?php if ((int)$item['user_id'] !== $user['id']): ?>
-              <?php if ($item['status'] === 'for_sale'): ?>
-                <div style="display:flex; gap:8px; margin-top:14px;">
-                  <a class="btn btn-primary" style="flex:1; text-align:center;" href="offer-create.php?item=<?= (int)$item['id'] ?>">Make Offer</a>
-                  <a class="btn btn-ghost" style="flex:1; text-align:center;" href="start-conversation.php?item=<?= (int)$item['id'] ?>">Message</a>
-                </div>
+              <?php if (users_blocked($pdo, $user['id'], (int)$item['user_id'])): ?>
+                <div style="margin-top:14px; font-size:11px; color:var(--paper-faint); text-align:center;">Unavailable</div>
               <?php else: ?>
-                <a class="btn btn-ghost" style="width:100%; text-align:center; margin-top:14px;" href="start-conversation.php?item=<?= (int)$item['id'] ?>">I Found This</a>
+                <?php if ($item['status'] === 'for_sale'): ?>
+                  <div style="display:flex; gap:8px; margin-top:14px;">
+                    <a class="btn btn-primary" style="flex:1; text-align:center;" href="offer-create.php?item=<?= (int)$item['id'] ?>">Make Offer</a>
+                    <a class="btn btn-ghost" style="flex:1; text-align:center;" href="start-conversation.php?item=<?= (int)$item['id'] ?>">Message</a>
+                  </div>
+                <?php else: ?>
+                  <a class="btn btn-ghost" style="width:100%; text-align:center; margin-top:14px;" href="start-conversation.php?item=<?= (int)$item['id'] ?>">I Found This</a>
+                <?php endif; ?>
+                <div style="text-align:center; margin-top:8px;">
+                  <a href="report-submit.php?item=<?= (int)$item['id'] ?>" class="report-link">Report this listing</a>
+                </div>
               <?php endif; ?>
             <?php else: ?>
               <div style="margin-top:14px; font-size:11px; color:var(--paper-faint); text-align:center;">This is your item</div>

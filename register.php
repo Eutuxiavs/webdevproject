@@ -89,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </label>
       <button type="submit" class="btn btn-primary auth-submit">Create account</button>
     </form>
+    <p class="auth-switch" style="margin-top:10px;">By creating an account you agree to our <a href="terms.php">Terms</a> and <a href="privacy.php">Privacy Policy</a>.</p>
 
     <p class="auth-switch">Already registered? <a href="login.php">Log in</a></p>
   </div>

@@ -538,33 +538,33 @@ footer{padding:0;}
    ============================================================ */
 .inv-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:20px; margin-top:32px;}
 .inv-card{
-  border:1px solid var(--line); border-radius:6px; overflow:hidden;
+  border:1px solid var(--line); border-radius:10px; overflow:hidden;
   background:linear-gradient(165deg, var(--ink-2), var(--ink) 75%);
   box-shadow:0 20px 50px -26px rgba(0,0,0,0.6); transition:all .25s ease;
 }
 .inv-card:hover{border-color:var(--accent-l); transform:translateY(-3px); box-shadow:0 26px 60px -22px rgba(0,0,0,0.7), 0 0 44px -20px var(--accent-glow-soft);}
 .inv-photo{
-  height:170px; position:relative; display:flex; align-items:center; justify-content:center;
+  height:180px; position:relative; display:flex; align-items:center; justify-content:center;
   border-bottom:1px solid var(--line-soft);
   background:radial-gradient(220px 150px at 28% 18%, var(--accent-glow-soft), transparent 72%), linear-gradient(160deg, var(--ink-3), var(--ink-2));
 }
 .inv-photo img{width:100%; height:100%; object-fit:cover;}
 .inv-photo svg{width:56px; height:56px; stroke:var(--paper-dim);}
-.inv-body{padding:18px 20px 20px;}
-.inv-cat{font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--paper-faint); margin-bottom:6px;}
-.inv-name{font-family:'Fraunces'; font-style:italic; font-size:17px; margin-bottom:12px;}
-.inv-meta{display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px solid var(--line-soft); margin-bottom:10px;}
-.inv-id{font-size:10.5px; color:var(--paper-faint);}
-.inv-price{font-family:'Fraunces'; font-style:italic; font-size:15px; color:var(--accent-l);}
-.inv-actions{display:flex; flex-wrap:wrap; gap:8px;}
+.inv-body{padding:24px 26px 26px;}
+.inv-cat{font-size:9px; letter-spacing:0.14em; text-transform:uppercase; color:var(--paper-faint); margin-bottom:8px;}
+.inv-name{font-family:'Fraunces'; font-style:italic; font-size:18px; margin-bottom:16px; line-height:1.3;}
+.inv-meta{display:flex; justify-content:space-between; align-items:center; padding-top:16px; border-top:1px solid var(--line-soft); margin-bottom:4px;}
+.inv-id{font-size:10.5px; color:var(--paper-faint); letter-spacing:0.02em;}
+.inv-price{font-family:'Fraunces'; font-style:italic; font-size:17px; color:var(--accent-l); margin:14px 0 18px;}
+.inv-actions{display:flex; flex-wrap:wrap; gap:10px; padding-top:2px;}
 .inv-actions .inline-action{display:inline-flex;}
 .inv-actions a, .inv-actions .inline-action button{
-  font-size:11px; padding:7px 13px; border:1px solid var(--line); border-radius:20px;
-  color:var(--paper-dim); text-decoration:none; background:transparent; cursor:pointer;
-  transition:all .2s ease; white-space:nowrap; line-height:1;
+  font-size:11px; font-weight:500; padding:8px 15px; border:1px solid var(--line); border-radius:20px;
+  color:var(--paper-dim); text-decoration:none; background:rgba(255,255,255,0.015); cursor:pointer;
+  transition:all .2s ease; white-space:nowrap; line-height:1.2;
 }
-.inv-actions a:hover, .inv-actions .inline-action button:hover{border-color:var(--accent-l); color:var(--accent-l);}
-.inv-actions .dash-danger{color:#e88686 !important; border-color:rgba(232,100,100,0.35) !important;}
+.inv-actions a:hover, .inv-actions .inline-action button:hover{border-color:var(--accent-l); color:var(--accent-l); background:rgba(100,100,232,0.08);}
+.inv-actions .dash-danger{color:#e8a0a0 !important; border-color:rgba(232,100,100,0.3) !important;}
 .inv-actions .dash-danger:hover{background:#e5484d !important; border-color:#e5484d !important; color:#fff !important;}
 
 @media (max-width:1100px){ .inv-grid{grid-template-columns:repeat(2,1fr);} }
@@ -682,3 +682,108 @@ footer{padding:0;}
 .offer-top{display:flex; justify-content:space-between; gap:16px;}
 .offer-msg{font-size:12.5px; color:var(--paper-faint); font-style:italic; margin-top:10px; line-height:1.5;}
 .offer-waiting{font-size:11.5px; color:var(--paper-faint); font-style:italic; align-self:center;}
+
+/* ============================================================
+   NAV NOTIFICATION BADGE (Offers link)
+   ============================================================ */
+.nav-badge{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:16px; height:16px; padding:0 4px; margin-left:6px;
+  background:#e5484d; color:#fff; font-size:9.5px; font-weight:700; border-radius:8px;
+  vertical-align:middle;
+}
+
+/* ============================================================
+   OFFER TYPE TABS (offer-create.php)
+   ============================================================ */
+.offer-type-tabs{display:flex; gap:8px; margin-bottom:24px;}
+.offer-type-tab{
+  flex:1; padding:11px; border:1px solid var(--line); border-radius:6px; background:transparent;
+  color:var(--paper-dim); font-size:12.5px; font-weight:500; cursor:pointer; transition:all .2s ease;
+}
+.offer-type-tab:hover{border-color:var(--accent-l);}
+.offer-type-tab.active{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600;}
+.offer-type-panel{margin-bottom:6px;}
+
+/* ============================================================
+   TRADE ITEM DISPLAY (offers.php)
+   ============================================================ */
+.offer-trade-item{
+  display:flex; align-items:center; gap:10px; margin-top:12px; padding:10px 12px;
+  border:1px solid var(--line-soft); border-radius:6px; background:rgba(255,255,255,0.02);
+  font-size:12px; color:var(--paper-dim);
+}
+.offer-trade-photo{
+  width:36px; height:36px; border-radius:4px; overflow:hidden; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; background:var(--ink-3);
+}
+.offer-trade-photo img{width:100%; height:100%; object-fit:cover;}
+.offer-trade-photo svg{width:16px; height:16px; stroke:var(--paper-faint);}
+
+/* ============================================================
+   REVIEWS / RATINGS
+   ============================================================ */
+.review-open-btn{
+  font-size:11px; padding:8px 15px; border:1px solid var(--accent-l); border-radius:20px;
+  color:var(--accent-l); background:rgba(100,100,232,0.06); cursor:pointer; transition:all .2s ease;
+}
+.review-open-btn:hover{background:var(--accent-l); color:#fff;}
+
+.star-picker{display:flex; gap:6px; justify-content:center;}
+.star-picker button{
+  background:none; border:none; font-size:30px; line-height:1; cursor:pointer;
+  color:var(--line); transition:color .15s ease;
+}
+.star-picker button.filled{color:#e8b64a;}
+
+.profile-rating{font-size:13px; color:var(--paper-dim); margin-top:6px; display:flex; align-items:center; gap:6px;}
+.profile-rating .stars{color:#e8b64a; font-size:14px; letter-spacing:1px;}
+
+.inv-acquired{font-size:10.5px; color:var(--paper-faint); font-style:italic; margin:-10px 0 14px;}
+
+.legal-body h3{font-family:'Fraunces'; font-style:italic; font-size:16px; margin:28px 0 10px; color:var(--paper);}
+.legal-body h3:first-child{margin-top:0;}
+.legal-body p{font-size:13.5px; color:var(--paper-dim); line-height:1.75;}
+
+/* ============================================================
+   VERIFIED BADGE / REPORT LINK / CITY TAG
+   ============================================================ */
+.verified-badge{
+  display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:600;
+  color:#5fd68a; border:1px solid rgba(95,214,138,0.4); background:rgba(95,214,138,0.08);
+  padding:3px 10px; border-radius:20px; vertical-align:middle; margin-left:8px;
+}
+.report-link{font-size:10.5px; color:var(--paper-faint); text-decoration:underline; transition:color .2s ease;}
+.report-link:hover{color:#e88686;}
+.reg-city{font-size:11px; color:var(--paper-faint); margin:-10px 0 12px;}
+
+/* ============================================================
+   MEETUP BOX (offers.php, accepted deals)
+   ============================================================ */
+.meetup-box{
+  margin-top:14px; padding:14px 16px; border:1px solid var(--line-soft); border-radius:6px;
+  background:rgba(255,255,255,0.015);
+}
+.meetup-label{font-size:9.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--paper-faint); margin-bottom:8px;}
+.meetup-current{font-size:12.5px; color:var(--paper-dim); margin-bottom:10px; line-height:1.5;}
+.meetup-current.empty{color:var(--paper-faint); font-style:italic;}
+.meetup-form{display:flex; gap:8px;}
+.meetup-form input{
+  flex:1; background:var(--ink-3); border:1px solid var(--line); border-radius:4px;
+  padding:8px 12px; color:var(--paper); font-size:12px; font-family:'Inter';
+}
+.meetup-form input:focus{outline:none; border-color:var(--accent-l);}
+.meetup-form button{
+  padding:8px 16px; border:1px solid var(--line); border-radius:4px; background:transparent;
+  color:var(--paper-dim); font-size:11.5px; cursor:pointer; transition:all .2s ease;
+}
+.meetup-form button:hover{border-color:var(--accent-l); color:var(--accent-l);}
+
+/* ============================================================
+   DISPUTE LINK
+   ============================================================ */
+.dispute-link{
+  background:none !important; border:1px solid rgba(232,100,100,0.3) !important;
+  color:#e8a0a0 !important; font-size:11px !important;
+}
+.dispute-link:hover{background:#e5484d !important; color:#fff !important; border-color:#e5484d !important;}

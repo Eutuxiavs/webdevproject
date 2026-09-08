@@ -9,6 +9,7 @@ $itemId = (int)($_GET['item'] ?? 0);
 $stmt = $pdo->prepare('SELECT * FROM items WHERE id = ? AND status IN ("for_sale", "lost")');
 $stmt->execute([$itemId]);
 $item = $stmt->fetch();
+if ($item) { track_recently_viewed((int)$item['id']); }
 
 if (!$item) {
     flash_set('error', 'That listing is no longer available.');
@@ -19,6 +20,12 @@ if (!$item) {
 if ((int)$item['user_id'] === $user['id']) {
     flash_set('error', "You can't message yourself about your own listing.");
     header('Location: dashboard.php');
+    exit;
+}
+
+if (users_blocked($pdo, $user['id'], (int)$item['user_id'])) {
+    flash_set('error', "You can't contact this user.");
+    header('Location: browse.php');
     exit;
 }
 
